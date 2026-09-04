@@ -285,4 +285,5 @@ Keep snapshots in sync when schema, API, or product rules change — **in the sa
 - Quality attributes (NFRs): [docs/nfr/](docs/nfr/)
 - Starter kit notes: [docs/STARTER-KIT.md](docs/STARTER-KIT.md)
 #   r e c i p e - s p e c k i t  
+ #   r e c i p e - s p e c k i t  
  
