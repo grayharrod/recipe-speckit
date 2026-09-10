@@ -89,7 +89,7 @@
 
 - Greenfield app — no existing users or external identity provider.
 - Single browser `localStorage` session per device (no multi-tab sync beyond shared storage).
-- Lists and todos are deferred to Features 2–3; Feature 1 delivers auth and a minimal protected home placeholder only.
+- Lists and ingredients are deferred to Features 2–3; Feature 1 delivers auth and a minimal protected home placeholder only.
 
 
 
@@ -116,9 +116,9 @@
 
 Feature 1 establishes identity; Features 2–3 enforce per-user data boundaries.
 
-- Each user account is a separate tenant boundary for todo lists and items.
+- Each user account is a separate tenant boundary for recipes and ingredients.
 - No API in this feature returns another user's profile or session.
-- Later features must never expose lists or todos across users — not in list responses, detail views, or error messages that confirm another user's resource exists.
+- Later features must never expose recipes or ingredients across users — not in list responses, detail views, or error messages that confirm another user's resource exists.
 
 ---
 
@@ -129,9 +129,9 @@ Feature 1 establishes identity; Features 2–3 enforce per-user data boundaries.
 
 | Method | Endpoint         | Auth | Purpose                                 |
 | ------ | ---------------- | ---- | --------------------------------------- |
-| `POST` | `/todo/register` | No   | Create a new user account               |
-| `POST` | `/todo/login`    | No   | Authenticate and return session payload |
-| `POST` | `/todo/logout`   | Yes  | Invalidate current session token        |
+| `POST` | `/recipe/register` | No   | Create a new user account               |
+| `POST` | `/recipe/login`    | No   | Authenticate and return session payload |
+| `POST` | `/recipe/logout`   | Yes  | Invalidate current session token        |
 
 
 **Login / register success response** (flat JSON, no envelope):
@@ -192,7 +192,7 @@ Feature 1 establishes identity; Features 2–3 enforce per-user data boundaries.
 
 ## Key Entities
 
-- **User**: registered account (name, email, username, role); owns future lists and todos.
+- **User**: registered account (name, email, username, role); owns future recipes and ingredients.
 - **Session**: server-side record tying a JWT token to a user; expires after 24 hours.
 
 ---
@@ -405,7 +405,7 @@ Feature 1 establishes identity; Features 2–3 enforce per-user data boundaries.
 
 - **Given** I am signed in as user A
 - **And** user B also exists
-- **When** I send an authenticated `GET /todo/lists` request
+- **When** I send an authenticated `GET /recipe/ingredients` request
 - **Then** the API returns `200`
 - **And** only lists owned by user A are returned
 
@@ -524,5 +524,5 @@ Do not implement behavior not in this spec.
 - Email verification
 - OAuth / social login
 - Admin user management
-- Full todo dashboard (Feature 2)
+- Full recipes dashboard (Feature 2)
 
