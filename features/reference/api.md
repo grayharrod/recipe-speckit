@@ -1,15 +1,50 @@
 # API Reference
 
-**Status:** empty starter — no application endpoints yet.
+**Status:** Feature 1 auth shipped on this branch. Recipe resource routes remain from the starter app.
 
-API mount path defaults to `/api` (see `backend/server.js`). Update this file when endpoints merge to `dev`.
+API mount path is `/recipeapi` (see `backend/server.js`). Authenticated routes require `Authorization: Bearer <token>`.
 
 ## Endpoints
 
-*(none)*
+| Method | Path | Auth | Purpose |
+| ------ | ---- | ---- | ------- |
+| `POST` | `/recipeapi/register` | No | Create a user and return a session payload |
+| `POST` | `/recipeapi/login` | No | Authenticate with username + password |
+| `POST` | `/recipeapi/logout` | Yes | Invalidate the current session token |
+| `GET` | `/recipeapi/recipes/user/:userId` | Yes | Recipes for the authenticated user (`req.user.id`; URL id is ignored) |
+
+Starter recipe/ingredient/step routes are unchanged except that `GET /recipeapi/recipes/user/:userId` is scoped to the session user.
+
+## Auth success payload
+
+Login (`200`) and register (`201`) return flat JSON (no envelope):
+
+```json
+{
+  "userId": 1,
+  "username": "jdoe",
+  "email": "jdoe@example.com",
+  "fName": "Jane",
+  "lName": "Doe",
+  "role": "worker",
+  "token": "<jwt>"
+}
+```
+
+Password hashes are never returned.
 
 ## Conventions
 
 - Flat JSON responses (no `{ success, data }` envelope).
 - Errors: `{ "message": "..." }`.
-- Authenticated routes: `Authorization: Bearer <token>` (when Feature auth is implemented).
+- Duplicate username: `400` `{ "message": "Username is already taken." }`
+- Duplicate email: `400` `{ "message": "Email is already registered." }`
+- Invalid login: `401` `{ "message": "Invalid username or password." }`
+- Missing/expired token: `401` with an unauthorized message.
+
+## Provenance
+
+| Area | Introduced |
+|------|------------|
+| Register / login / logout | Feature 1 |
+| User-scoped `GET /recipes/user/:userId` | Feature 1 (ownership via `req.user.id`) |

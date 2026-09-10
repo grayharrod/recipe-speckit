@@ -1,4 +1,6 @@
 import axios from "axios";
+import Router from "../router.js";
+import Utils from "../config/utils.js";
 
 var baseurl = "";
 if (import.meta.env.DEV) {
@@ -9,32 +11,53 @@ if (import.meta.env.DEV) {
 
 const apiClient = axios.create({
   baseURL: baseurl,
+  withCredentials: true,
   headers: {
     Accept: "application/json",
     "Content-Type": "application/json",
     "X-Requested-With": "XMLHttpRequest",
-    "Access-Control-Allow-Origin": "*",
-    crossDomain: true,
   },
   transformRequest: (data, headers) => {
-    let token = null;
-    if (localStorage.getItem("user") !== null) {
-      token = JSON.parse(localStorage.getItem("user")).token;
+    const user = Utils.getStore("user");
+    const token = user?.token;
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
     }
-    let authHeader = "";
-    if (token !== null && token !== "") {
-      authHeader = "Bearer " + token;
-      headers["Authorization"] = authHeader;
+    if (data === undefined || data === null) {
+      return data;
     }
     return JSON.stringify(data);
   },
   transformResponse: function (data) {
-    data = JSON.parse(data);
-    if (!data.success && data.code == "expired-session") {
-      localStorage.removeItem("user");
+    if (!data) {
+      return data;
+    }
+    try {
+      data = JSON.parse(data);
+    } catch {
+      return data;
+    }
+    const message = data?.message;
+    if (
+      typeof message === "string" &&
+      /unauthorized|expired token|invalid session/i.test(message)
+    ) {
+      Utils.removeItem("user");
+      Router.push({ name: "login" });
     }
     return data;
   },
 });
+
+apiClient.interceptors.response.use(
+  (res) => res,
+  (err) => {
+    if (err.response?.status === 401) {
+      Utils.removeItem("user");
+      Router.push({ name: "login" });
+    }
+    return Promise.reject(err);
+  }
+);
 
 export default apiClient;

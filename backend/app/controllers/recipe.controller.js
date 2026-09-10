@@ -57,7 +57,7 @@ exports.create = (req, res) => {
 
 // Find all Recipes for a user
 exports.findAllForUser = (req, res) => {
-  const userId = req.params.userId;
+  const userId = req.user.id;
   Recipe.findAll({
     where: { userId: userId },
     include: [

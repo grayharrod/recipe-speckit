@@ -27,8 +27,8 @@ onMounted(async () => {
 
 async function getRecipes() {
   user.value = JSON.parse(localStorage.getItem("user"));
-  if (user.value !== null && user.value.id !== null) {
-    await RecipeServices.getRecipesByUserId(user.value.id)
+  if (user.value !== null && user.value.userId != null) {
+    await RecipeServices.getRecipesByUserId(user.value.userId)
       .then((response) => {
         recipes.value = response.data;
       })
@@ -54,7 +54,7 @@ async function getRecipes() {
 
 async function addRecipe() {
   isAdd.value = false;
-  newRecipe.value.userId = user.value.id;
+  newRecipe.value.userId = user.value.userId;
   await RecipeServices.addRecipe(newRecipe.value)
     .then(() => {
       snackbar.value.value = true;

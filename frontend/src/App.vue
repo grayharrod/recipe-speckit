@@ -1,10 +1,17 @@
 <script setup>
+import { computed } from "vue";
+import { useRoute } from "vue-router";
 import MenuBar from "./components/MenuBar.vue";
+
+const route = useRoute();
+const hideMenu = computed(() =>
+  ["login", "register", "home"].includes(route.name)
+);
 </script>
 
 <template>
-  <v-app :style="{ background: '#F4F4F4' }">
-    <MenuBar :key="$route.fullPath" />
+  <v-app>
+    <MenuBar v-if="!hideMenu" :key="route.fullPath" />
     <v-main>
       <router-view />
     </v-main>
