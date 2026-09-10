@@ -1,98 +1,13 @@
 const db = require("../models");
 const User = db.user;
-const Session = db.session;
 const Op = db.Sequelize.Op;
-const { encrypt, getSalt, hashPassword } = require("../authentication/crypto");
+const auth = require("./auth.controller.js");
 
-// Create and Save a new User
+// Create and Save a new User (admin-style create; registration is POST /register)
 exports.create = async (req, res) => {
-  // Validate request
-  if (req.body.firstName === undefined) {
-    const error = new Error("First name cannot be empty for user!");
-    error.statusCode = 400;
-    throw error;
-  } else if (req.body.lastName === undefined) {
-    const error = new Error("Last name cannot be empty for user!");
-    error.statusCode = 400;
-    throw error;
-  } else if (req.body.email === undefined) {
-    const error = new Error("Email cannot be empty for user!");
-    error.statusCode = 400;
-    throw error;
-  } else if (req.body.password === undefined) {
-    const error = new Error("Password cannot be empty for user!");
-    error.statusCode = 400;
-    throw error;
-  }
-
-  // find by email
-  await User.findOne({
-    where: {
-      email: req.body.email,
-    },
-  })
-    .then(async (data) => {
-      if (data) {
-        return res.status(400).send({
-          message: "This email is already in use.",
-        });
-      } else {
-        console.log("email not found");
-
-        let salt = await getSalt();
-        let hash = await hashPassword(req.body.password, salt);
-
-        // Create a User
-        const user = {
-          id: req.body.id,
-          firstName: req.body.firstName,
-          lastName: req.body.lastName,
-          email: req.body.email,
-          password: hash,
-          salt: salt,
-        };
-
-        // Save User in the database
-        await User.create(user)
-          .then(async (data) => {
-            // Create a Session for the new user
-            let userId = data.id;
-
-            let expireTime = new Date();
-            expireTime.setDate(expireTime.getDate() + 1);
-
-            const session = {
-              email: req.body.email,
-              userId: userId,
-              expirationDate: expireTime,
-            };
-            await Session.create(session).then(async (data) => {
-              let sessionId = data.id;
-              let token = await encrypt(sessionId);
-              let userInfo = {
-                email: user.email,
-                firstName: user.firstName,
-                lastName: user.lastName,
-                id: userId,
-                token: token,
-              };
-              res.send(userInfo);
-            });
-          })
-          .catch((err) => {
-            console.log(err);
-            res.status(500).send({
-              message:
-                err.message || "Some error occurred while creating the User.",
-            });
-          });
-      }
-    })
-    .catch((err) => {
-      res.status(500).send({
-        message: err.message || "Error retrieving User with email=" + req.body.email,
-      });
-    });
+  req.body.fName = req.body.fName || req.body.firstName;
+  req.body.lName = req.body.lName || req.body.lastName;
+  return auth.register(req, res);
 };
 
 // Retrieve all Users from the database.

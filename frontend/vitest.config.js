@@ -1,13 +1,17 @@
 import { defineConfig } from "vitest/config";
 import vue from "@vitejs/plugin-vue";
-import vuetify from "vite-plugin-vuetify";
+import { fileURLToPath } from "node:url";
 
 export default defineConfig({
-  plugins: [vue(), vuetify({ autoImport: true })],
+  plugins: [vue()],
   resolve: {
     alias: {
-      "/oc_logo.png": "/Applications/XAMPP/xamppfiles/htdocs/recipe-speckit/frontend/public/oc_logo.png",
+      vue: fileURLToPath(new URL("./node_modules/vue", import.meta.url)),
+      "/oc_logo.png": fileURLToPath(
+        new URL("./public/oc_logo.png", import.meta.url)
+      ),
     },
+    dedupe: ["vue"],
   },
   test: {
     environment: "jsdom",
