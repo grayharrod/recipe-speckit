@@ -7,18 +7,28 @@ module.exports = (sequelize, Sequelize) => {
     description: {
       type: Sequelize.STRING,
       allowNull: false,
+      defaultValue: "",
     },
     servings: {
       type: Sequelize.INTEGER,
-      allowNull: false,
+      allowNull: true,
     },
     time: {
       type: Sequelize.INTEGER,
-      allowNull: false,
+      allowNull: true,
+    },
+    category: {
+      type: Sequelize.STRING,
+      allowNull: true,
+    },
+    imagePath: {
+      type: Sequelize.STRING,
+      allowNull: true,
     },
     isPublished: {
       type: Sequelize.BOOLEAN,
       allowNull: false,
+      defaultValue: false,
     },
   });
   return Recipe;

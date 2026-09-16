@@ -19,4 +19,9 @@ export default {
   deleteRecipe(recipeId) {
     return apiClient.delete("recipes/" + recipeId);
   },
+  uploadRecipeImage(recipeId, file) {
+    const formData = new FormData();
+    formData.append("image", file);
+    return apiClient.post("recipes/" + recipeId + "/image", formData);
+  },
 };

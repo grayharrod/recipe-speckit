@@ -10,6 +10,7 @@ module.exports = (sequelize, Sequelize) => {
     },
     pricePerUnit: {
       type: Sequelize.DECIMAL(10, 2),
+      allowNull: true,
     },
   });
   return Ingredient;

@@ -23,6 +23,11 @@ const apiClient = axios.create({
     if (token) {
       headers["Authorization"] = `Bearer ${token}`;
     }
+    if (data instanceof FormData) {
+      // Let the browser set multipart boundary.
+      delete headers["Content-Type"];
+      return data;
+    }
     if (data === undefined || data === null) {
       return data;
     }
