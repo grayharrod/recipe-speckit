@@ -1,18 +1,26 @@
 require("dotenv").config();
 
+const path = require("path");
 const express = require("express");
 const cors = require("cors");
+const { ensureUploadDir } = require("./app/middleware/recipeUpload");
 
 const app = express();
+ensureUploadDir();
 
 const db = require("./app/models");
 
 if (process.env.NODE_ENV !== "test") {
-  db.sequelize.sync();
+  const syncOptions =
+    process.env.SEQUELIZE_SYNC_ALTER === "true" ? { alter: true } : {};
+  db.sequelize.sync(syncOptions).catch((err) => {
+    console.error("Sequelize sync failed:", err.message);
+  });
 }
 
 var corsOptions = {
   origin: "http://localhost:8082",
+  credentials: true,
 };
 
 app.use(cors(corsOptions));
@@ -28,6 +36,11 @@ app.use(express.urlencoded({ extended: true }));
 app.get("/", (req, res) => {
   res.json({ message: "Welcome to the recipe backend." });
 });
+
+app.use(
+  "/recipeapi/uploads",
+  express.static(path.join(__dirname, "uploads"))
+);
 
 require("./app/routes/auth.routes.js")(app);
 require("./app/routes/ingredient.routes")(app);

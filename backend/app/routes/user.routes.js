@@ -9,10 +9,10 @@ module.exports = (app) => {
   // Retrieve all Users
   router.get("/users/", User.findAll);
 
-  // Retrieve a single User with id
-  router.get("/users/:id", User.findOne);
+  // Retrieve a single User with id (own profile only)
+  router.get("/users/:id", [authenticateRoute], User.findOne);
 
-  // Update a User with id
+  // Update a User with id (own profile only)
   router.put("/users/:id", [authenticateRoute], User.update);
 
   // Delete a User with id
