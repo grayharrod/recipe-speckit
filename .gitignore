@@ -6,6 +6,8 @@ dist/
 frontend/dist/
 backend/deploy/
 backend/logs/
+backend/uploads/recipes/*
+!backend/uploads/recipes/.gitkeep
 *.log
 .DS_Store
 docs/todo-speckit-specs.md

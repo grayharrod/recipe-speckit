@@ -4,6 +4,10 @@ module.exports = (sequelize, Sequelize) => {
       type: Sequelize.FLOAT,
       allowNull: false,
     },
+    recipeStepId: {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    },
   });
   return RecipeIngredient;
 };
