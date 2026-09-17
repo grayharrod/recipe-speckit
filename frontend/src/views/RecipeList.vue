@@ -16,6 +16,7 @@ const addLoading = ref(false);
 const addError = ref("");
 const addForm = ref(null);
 const deleteTarget = ref(null);
+const exportAllLoading = ref(false);
 
 const addRecipe = ref({
   name: "",
@@ -170,6 +171,21 @@ async function submitAdd() {
     addLoading.value = false;
   }
 }
+
+async function exportAll() {
+  if (exportAllLoading.value) {
+    return;
+  }
+  exportAllLoading.value = true;
+  try {
+    const res = await RecipeServices.exportAllRecipes();
+    Utils.downloadExport(res, "my-recipes.xlsx");
+  } catch {
+    error.value = "Unable to export recipes.";
+  } finally {
+    exportAllLoading.value = false;
+  }
+}
 </script>
 
 <template>
@@ -178,14 +194,26 @@ async function submitAdd() {
       <v-col cols="12">
         <div class="d-flex align-center justify-space-between mb-4">
           <h1 class="text-h5 text-primary">My Recipes</h1>
-          <v-btn
-            color="primary"
-            variant="elevated"
-            class="oc-cta"
-            @click="openAdd"
-          >
-            + Add Recipe
-          </v-btn>
+          <div class="d-flex ga-2">
+            <v-btn
+              v-if="!loading"
+              color="secondary"
+              variant="outlined"
+              :loading="exportAllLoading"
+              :disabled="exportAllLoading"
+              @click="exportAll"
+            >
+              Export all as Excel
+            </v-btn>
+            <v-btn
+              color="primary"
+              variant="elevated"
+              class="oc-cta"
+              @click="openAdd"
+            >
+              + Add Recipe
+            </v-btn>
+          </div>
         </div>
         <v-text-field
           v-model="search"

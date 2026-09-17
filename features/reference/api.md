@@ -1,6 +1,6 @@
 # API Reference
 
-**Status:** Features 1–4 on this branch. Mount path `/recipeapi`. Authenticated routes require `Authorization: Bearer <token>`. Flat JSON (no envelope). Errors `{ "message": "..." }`. Not owned: `404`. Unauthenticated: `401`.
+**Status:** Features 1–5 on this branch. Mount path `/recipeapi`. Authenticated routes require `Authorization: Bearer <token>`. Flat JSON (no envelope) except binary recipe exports. Errors `{ "message": "..." }`. Not owned: `404`. Unauthenticated: `401`.
 
 ## Endpoints
 
@@ -12,8 +12,10 @@
 | `GET` | `/recipeapi/users/:id` | Yes | Own profile only (`:id` must match `req.user.id`) |
 | `PUT` | `/recipeapi/users/:id` | Yes | Update own profile (`:id` must match `req.user.id`) |
 | `GET` | `/recipeapi/recipes` | Yes | List the signed-in user's recipes |
+| `GET` | `/recipeapi/recipes/export?format=xlsx` | Yes | Excel workbook of all owned recipes (`my-recipes.xlsx`) |
 | `POST` | `/recipeapi/recipes` | Yes | Create a recipe owned by the session user |
 | `GET` | `/recipeapi/recipes/:id` | Yes | Owned recipe detail (nested steps + ingredients) |
+| `GET` | `/recipeapi/recipes/:id/export?format=pdf\|xlsx` | Yes | PDF or Excel of one owned recipe |
 | `PUT` | `/recipeapi/recipes/:id` | Yes | Update an owned recipe |
 | `DELETE` | `/recipeapi/recipes/:id` | Yes | Delete an owned recipe (cascade nested rows + photo) |
 | `POST` | `/recipeapi/recipes/:id/image` | Yes | Upload/replace recipe photo |
@@ -30,7 +32,19 @@
 | `PUT` | `/recipeapi/recipes/:recipeId/recipeSteps/:id` | Yes | Update a step |
 | `DELETE` | `/recipeapi/recipes/:recipeId/recipeSteps/:id` | Yes | Remove a step |
 
-`GET /recipeapi/recipes/user/:userId` still exists; clients use `GET /recipeapi/recipes`.
+`GET /recipeapi/recipes/user/:userId` still exists; clients use `GET /recipeapi/recipes`. Register `GET /recipes/export` before `GET /recipes/:id`.
+
+### Recipe export (Feature 5)
+
+Binary responses (not JSON). `format` query is required and case-sensitive.
+
+| Path | `format` | `Content-Type` | Filename |
+|------|----------|----------------|----------|
+| `GET /recipeapi/recipes/:id/export` | `pdf` | `application/pdf` | sanitized recipe name + `.pdf` |
+| `GET /recipeapi/recipes/:id/export` | `xlsx` | `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` | sanitized recipe name + `.xlsx` |
+| `GET /recipeapi/recipes/export` | `xlsx` only | same Excel type | `my-recipes.xlsx` |
+
+Single-recipe Excel sheets: **Recipe**, **Ingredients**, **Steps**. Collection sheets: **Recipes**, **Ingredients**, **Steps**. Photos are not included. Missing/invalid `format` (including `pdf` on the collection path) → `400` `"Export format is not valid."`
 
 ### Ingredient create/update body
 
@@ -48,7 +62,7 @@ Attach: `{ "ingredientId": 3, "quantity": 2 }` (`recipeId` from the path). Updat
 
 | Status | Message |
 |--------|---------|
-| `400` | `"Ingredient name is required."` / `"Ingredient name is already in your list."` / `"Unit is required."` / `"Unit is not valid."` / `"Quantity is required."` |
+| `400` | `"Ingredient name is required."` / `"Ingredient name is already in your list."` / `"Unit is required."` / `"Unit is not valid."` / `"Quantity is required."` / `"Export format is not valid."` |
 | `404` | `"Ingredient with id={id} not found."` / `"Recipe with id={id} not found."` |
 
 ## Auth success payload
@@ -94,3 +108,4 @@ Password hashes are never returned.
 | Recipe CRUD, photos, steps, attach ingredient | Feature 2 |
 | Ingredient PUT/DELETE; catalog list order; recipe-ingredient quantity update | Feature 3 |
 | Owned `GET` / `PUT` `/users/:id` | Feature 4 |
+| Recipe PDF / Excel export | Feature 5 |

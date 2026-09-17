@@ -11,6 +11,8 @@ module.exports = (app) => {
     [authenticateRoute],
     Recipe.findAll
   );
+  router.get("/recipes/export", [authenticateRoute], Recipe.exportAll);
+  router.get("/recipes/:id/export", [authenticateRoute], Recipe.exportOne);
   router.get("/recipes/:id", [authenticateRoute], Recipe.findOne);
   router.put("/recipes/:id", [authenticateRoute], Recipe.update);
   router.delete("/recipes/:id", [authenticateRoute], Recipe.delete);

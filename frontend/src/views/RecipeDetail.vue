@@ -9,6 +9,8 @@ const router = useRouter();
 const recipe = ref(null);
 const loading = ref(false);
 const error = ref("");
+const exportPdfLoading = ref(false);
+const exportExcelLoading = ref(false);
 
 const imageSrc = computed(() => Utils.recipeImageUrl(recipe.value?.imagePath));
 
@@ -50,6 +52,35 @@ function goEdit() {
 function goHome() {
   router.push({ name: "home" });
 }
+
+async function exportRecipe(format) {
+  if (format === "pdf" && exportPdfLoading.value) {
+    return;
+  }
+  if (format === "xlsx" && exportExcelLoading.value) {
+    return;
+  }
+  if (format === "pdf") {
+    exportPdfLoading.value = true;
+  } else {
+    exportExcelLoading.value = true;
+  }
+  try {
+    const res = await RecipeServices.exportRecipe(route.params.id, format);
+    Utils.downloadExport(
+      res,
+      format === "pdf" ? "recipe.pdf" : "recipe.xlsx"
+    );
+  } catch {
+    error.value = "Unable to export recipe.";
+  } finally {
+    if (format === "pdf") {
+      exportPdfLoading.value = false;
+    } else {
+      exportExcelLoading.value = false;
+    }
+  }
+}
 </script>
 
 <template>
@@ -70,14 +101,34 @@ function goHome() {
     <v-card v-if="recipe" rounded="lg" class="pa-4">
       <div class="d-flex align-center justify-space-between mb-4">
         <h1 class="text-h5 text-primary">{{ recipe.name }}</h1>
-        <v-btn
-          color="primary"
-          variant="elevated"
-          class="oc-cta"
-          @click="goEdit"
-        >
-          Edit recipe
-        </v-btn>
+        <div class="d-flex ga-2">
+          <v-btn
+            color="secondary"
+            variant="outlined"
+            :loading="exportPdfLoading"
+            :disabled="exportPdfLoading"
+            @click="exportRecipe('pdf')"
+          >
+            Export PDF
+          </v-btn>
+          <v-btn
+            color="secondary"
+            variant="outlined"
+            :loading="exportExcelLoading"
+            :disabled="exportExcelLoading"
+            @click="exportRecipe('xlsx')"
+          >
+            Export Excel
+          </v-btn>
+          <v-btn
+            color="primary"
+            variant="elevated"
+            class="oc-cta"
+            @click="goEdit"
+          >
+            Edit recipe
+          </v-btn>
+        </div>
       </div>
       <v-img
         v-if="imageSrc"

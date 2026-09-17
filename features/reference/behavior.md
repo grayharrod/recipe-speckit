@@ -30,4 +30,6 @@
 | Edit Profile uses shared `emailRules`; client blocks bad email / short / mismatched password | `MenuBar.vue` | Feature 4 |
 | After profile save, refresh `localStorage.user` and dispatch `user-logged-in` | `MenuBar.vue` | Feature 4 |
 | Profile dropdown shows full name, username, email; actions **Edit Profile** and **Log out** | `MenuBar.vue` | Feature 4 |
-| Logout entry point is the profile dropdown only (no standalone **Sign out**) | `MenuBar.vue` | Feature 4 |
+| Recipe PDF / Excel generated on the server; SPA downloads via `RecipeServices.exportRecipe` / `exportAllRecipes` | `recipeExport.js` + `RecipeDetail.vue` / `RecipeList.vue` | Feature 5 |
+| Export only owned recipes; wrong owner → `404`; collection Excel omits other users | `exportOne` / `exportAll` | Feature 5 |
+| Export filename sanitizes recipe name; punctuation-only names → `recipe.pdf` / `recipe.xlsx` | `sanitizeFilename` | Feature 5 |

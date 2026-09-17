@@ -5,6 +5,14 @@ const {
   deleteImageFile,
   publicImagePath,
 } = require("../middleware/recipeUpload");
+const {
+  EXCEL_TYPE,
+  sanitizeFilename,
+  buildPdf,
+  buildSingleXlsx,
+  buildCollectionXlsx,
+  sendFile,
+} = require("../export/recipeExport");
 
 const Recipe = db.recipe;
 const RecipeStep = db.recipeStep;
@@ -256,6 +264,66 @@ exports.uploadImage = async (req, res) => {
   } catch (err) {
     return res.status(500).send({
       message: err.message || "Error uploading recipe image.",
+    });
+  }
+};
+
+const invalidFormat = (res) =>
+  res.status(400).send({ message: "Export format is not valid." });
+
+exports.exportOne = async (req, res) => {
+  try {
+    const format = req.query.format;
+    if (format !== "pdf" && format !== "xlsx") {
+      return invalidFormat(res);
+    }
+
+    const recipe = await getAccessibleRecipeOrNull(req, req.params.id);
+    if (!recipe) {
+      return notFoundRecipe(res, req.params.id);
+    }
+    const detail = await loadRecipeDetail(recipe.id, req.user.id);
+    const base = sanitizeFilename(detail.name);
+    if (format === "pdf") {
+      const buffer = await buildPdf(detail);
+      return sendFile(res, {
+        buffer,
+        contentType: "application/pdf",
+        filename: `${base}.pdf`,
+      });
+    }
+    const buffer = await buildSingleXlsx(detail);
+    return sendFile(res, {
+      buffer,
+      contentType: EXCEL_TYPE,
+      filename: `${base}.xlsx`,
+    });
+  } catch (err) {
+    return res.status(500).send({
+      message: err.message || "Error exporting recipe.",
+    });
+  }
+};
+
+exports.exportAll = async (req, res) => {
+  try {
+    if (req.query.format !== "xlsx") {
+      return invalidFormat(res);
+    }
+
+    const recipes = await Recipe.findAll({
+      where: { userId: req.user.id },
+      include: detailInclude,
+    });
+    const buffer = await buildCollectionXlsx(recipes);
+    return sendFile(res, {
+      buffer,
+      contentType: EXCEL_TYPE,
+      filename: "my-recipes.xlsx",
+    });
+  } catch (err) {
+    return res.status(500).send({
+      message: err.message || "Error exporting recipes.",
     });
   }
 };

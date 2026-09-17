@@ -24,6 +24,18 @@ export default {
     formData.append("image", file);
     return apiClient.post("recipes/" + recipeId + "/image", formData);
   },
+  exportRecipe(id, format) {
+    return apiClient.get("recipes/" + id + "/export", {
+      params: { format },
+      responseType: "blob",
+    });
+  },
+  exportAllRecipes() {
+    return apiClient.get("recipes/export", {
+      params: { format: "xlsx" },
+      responseType: "blob",
+    });
+  },
 
   getRecipeStepsForRecipe(recipeId) {
     return apiClient.get("recipes/" + recipeId + "/recipeSteps");

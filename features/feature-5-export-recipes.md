@@ -221,7 +221,7 @@ Ingredient and step rows MUST use the parent recipe's current **name**. Order: r
 
 ## Screen Requirements
 
-Follow [ui-style-system.mdc](../.cursor/rules/ui-style-system.mdc): `oc-cta` on primary labeled CTAs; no labeled buttons inside `v-card-title`; errors in `<v-alert type="error">`. **No new router names or paths** — use existing `home`, `recipe`, and `editRecipe` in `frontend/src/router.js`. HTTP calls go through `frontend/src/services/RecipeServices.js` (not axios in the view). Export GETs MUST use `responseType: "blob"` so the binary body is not parsed as JSON.
+Follow [ui-style-system.mdc](../.cursor/rules/ui-style-system.mdc): `oc-cta` on primary labeled CTAs; no labeled buttons inside `v-card-title`; errors in `<v-alert type="error">`. **No new router names or paths** — use existing `home`, `recipe`, and `editRecipe` in `frontend/src/router.js`. HTTP calls go through `frontend/src/services/RecipeServices.js` (not axios in the view). Add `exportRecipe(id, format)` for `GET …/recipes/:id/export?format=` and `exportAllRecipes()` for `GET …/recipes/export?format=xlsx`. Both MUST use `responseType: "blob"` so the binary body is not parsed as JSON.
 
 MenuBar, Ingredients nav, Edit Profile, and login/register are unchanged.
 
@@ -457,13 +457,13 @@ Do not implement behavior not in this spec.
 
 ## Definition of Done
 
-*   [ ] Backend and frontend implemented per this spec (**FR-00N** satisfied)
-*   [ ] **Success Criteria (SC-00N)** met
+*   [x] Backend and frontend implemented per this spec (**FR-00N** satisfied)
+*   [x] **Success Criteria (SC-00N)** met
 *   [ ] All mapped tests pass (`npm test`)
-*   [ ] Test Coverage Map complete
-*   [ ] `features/reference/data-model.md` updated (if schema changed)
-*   [ ] `features/reference/api.md` updated (if API changed)
-*   [ ] `features/reference/behavior.md` updated (if product rules changed)
+*   [x] Test Coverage Map complete
+*   [x] `features/reference/data-model.md` updated (if schema changed)
+*   [x] `features/reference/api.md` updated (if API changed)
+*   [x] `features/reference/behavior.md` updated (if product rules changed)
 
 ---
 

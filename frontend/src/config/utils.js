@@ -29,4 +29,25 @@ export default {
     }
     return imagePath;
   },
+  downloadExport(res, fallbackName) {
+    const header =
+      res.headers?.["content-disposition"] ||
+      res.headers?.["Content-Disposition"] ||
+      "";
+    const match = /filename="?([^";]+)"?/i.exec(header);
+    const filename = match ? match[1] : fallbackName;
+    if (typeof URL.createObjectURL !== "function") {
+      return;
+    }
+    const data = res.data;
+    const blob = data instanceof Blob ? data : new Blob([data]);
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", filename);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  },
 };
