@@ -6,7 +6,7 @@ import ThemeToggle from "./components/ThemeToggle.vue";
 
 const route = useRoute();
 const hideMenu = computed(() =>
-  ["login", "register", "home"].includes(route.name)
+  ["login", "register"].includes(route.name)
 );
 </script>
 

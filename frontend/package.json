@@ -1,6 +1,14 @@
 {
   "name": "recipe-frontend",
   "version": "0.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "main": "vite.config.js",
+  "directories": {
+    "test": "tests"
+  },
   "scripts": {
     "dev": "cross-env APP_ENV=development vite",
     "build": "cross-env APP_ENV=production vite build",
@@ -17,6 +25,7 @@
     "jspdf": "^2.5.1",
     "jspdf-autotable": "^3.8.2",
     "roboto-fontface": "*",
+    "speckit-app": "file:..",
     "vue": "^3.2.41",
     "vue-router": "^4.1.6",
     "vuetify": "^3.2.3",
@@ -32,6 +41,5 @@
     "vite-plugin-vuetify": "^2.0.3",
     "vitest": "^1.6.0",
     "vue-cli-plugin-vuetify": "~2.5.8"
-  },
-  "type": "module"
+  }
 }

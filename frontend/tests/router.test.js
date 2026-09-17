@@ -17,6 +17,7 @@ function makeRouter() {
       { path: "/", name: "login", component: stub },
       { path: "/register", name: "register", component: stub },
       { path: "/home", name: "home", component: stub },
+      { path: "/ingredients", name: "ingredients", component: stub },
     ],
   });
   applyAuthGuard(router);
@@ -46,6 +47,21 @@ describe("Feature 1 — User Authentication & Session Management", () => {
     it("Unauthenticated user accesses a protected route", async () => {
       const router = makeRouter();
       await router.push({ name: "home" });
+      await router.isReady();
+      expect(router.currentRoute.value.name).toBe("login");
+    });
+  });
+});
+
+describe("Feature 3 — Manage Ingredients", () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  describe("US-3.5 — Keep the ingredient catalog private", () => {
+    it("Unauthenticated ingredient API call", async () => {
+      const router = makeRouter();
+      await router.push({ name: "ingredients" });
       await router.isReady();
       expect(router.currentRoute.value.name).toBe("login");
     });

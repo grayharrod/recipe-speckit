@@ -16,4 +16,17 @@ export default {
   removeItem(key) {
     localStorage.removeItem(key);
   },
+  /** Resolve stored recipe imagePath to a browser-loadable URL. */
+  recipeImageUrl(imagePath) {
+    if (!imagePath) {
+      return null;
+    }
+    if (/^https?:\/\//i.test(imagePath)) {
+      return imagePath;
+    }
+    if (import.meta.env.DEV) {
+      return `http://localhost:3200${imagePath}`;
+    }
+    return imagePath;
+  },
 };

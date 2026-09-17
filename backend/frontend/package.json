@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "speckit-app-backend": "file:.."
+  }
+}

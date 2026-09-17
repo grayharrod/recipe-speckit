@@ -208,6 +208,9 @@ For this course, **you** write the requirements half and the **data model**. You
 | ID | File | Branch | Depends on |
 |----|------|--------|------------|
 | 1 | [feature-1-user-auth.md](features/feature-1-user-auth.md) | `feature/1-user-auth` | — |
+| 2 | [feature-2-recipe-management.md](features/feature-2-recipe-management.md) | `feature/2-recipe-management` | Feature 1 |
+| 3 | [feature-3-manage-ingredients.md](features/feature-3-manage-ingredients.md) | `feature/3-manage-ingredients` | Feature 1, Feature 2 |
+| 4 | [feature-4-user-profile-management.md](features/feature-4-user-profile-management.md) | `feature/4-user-profile-management` | Features 1–3 |
 
 New features: you own requirements + data model; Cursor helps with the remaining design sections. Still follow [features/framework.md](features/framework.md#feature-spec-template) for the overall shape of the file.
 
@@ -284,7 +287,10 @@ Keep snapshots in sync when schema, API, or product rules change — **in the sa
 - ADRs: [docs/adr/](docs/adr/)
 - Quality attributes (NFRs): [docs/nfr/](docs/nfr/)
 - Starter kit notes: [docs/STARTER-KIT.md](docs/STARTER-KIT.md)
-#   r e c i p e - s p e c k i t  
- #   r e c i p e - s p e c k i t  
- #   r e c i p e - s p e c k i t  
+#   r e c i p e - s p e c k i t 
+ 
+ #   r e c i p e - s p e c k i t 
+ 
+ #   r e c i p e - s p e c k i t 
+ 
  

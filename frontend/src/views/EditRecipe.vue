@@ -1,598 +1,489 @@
 <script setup>
-import { onMounted, ref } from "vue";
-import { useRoute } from "vue-router";
+import { computed, onMounted, ref } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import RecipeServices from "../services/RecipeServices.js";
 import IngredientServices from "../services/IngredientServices.js";
-import RecipeIngredientServices from "../services/RecipeIngredientServices";
-import RecipeStepServices from "../services/RecipeStepServices";
-import RecipeServices from "../services/RecipeServices";
+import Utils from "../config/utils.js";
+import { CATEGORIES, UNITS } from "../config/recipeConstants.js";
 
 const route = useRoute();
-
-const recipe = ref({});
-const ingredients = ref([]);
-const selectedIngredient = ref({});
-const recipeIngredients = ref([]);
-const recipeSteps = ref([]);
-const isAddIngredient = ref(false);
-const isEditIngredient = ref(false);
-const isAddStep = ref(false);
-const isEditStep = ref(false);
-const snackbar = ref({
-  value: false,
-  color: "",
-  text: "",
-});
-const newStep = ref({
-  id: undefined,
-  stepNumber: undefined,
-  instruction: undefined,
-  recipeId: undefined,
+const router = useRouter();
+const recipe = ref({
+  name: "",
+  description: "",
+  servings: "",
+  time: "",
+  category: null,
+  imagePath: null,
+  recipeStep: [],
   recipeIngredient: [],
 });
-const newIngredient = ref({
-  id: undefined,
-  quantity: undefined,
-  recipeId: undefined,
-  recipeStepId: undefined,
-  ingredientId: undefined,
-});
+const ingredients = ref([]);
+const loading = ref(false);
+const saving = ref(false);
+const error = ref("");
+const form = ref(null);
 
-onMounted(async () => {
-  await getRecipe();
-  await getRecipeIngredients();
-  await getIngredients();
-  await getRecipeSteps();
-});
+const selectedIngredientId = ref(null);
+const quantity = ref("");
+const newIngredientName = ref("");
+const newIngredientUnit = ref("cup");
+const newStepInstruction = ref("");
+const photo = ref(null);
+const attachError = ref("");
+const savedQuantities = ref({});
 
-async function getRecipe() {
-  await RecipeServices.getRecipe(route.params.id)
-    .then((response) => {
-      recipe.value = response.data[0];
-    })
-    .catch((error) => {
-      console.log(error);
-    });
+const nameRules = [
+  (v) => !!String(v ?? "").trim() || "Recipe name is required.",
+];
+const descriptionRules = [
+  (v) => !!String(v ?? "").trim() || "Description is required.",
+];
+const servingsRules = [
+  (v) =>
+    v === "" ||
+    v === null ||
+    v === undefined ||
+    (Number.isInteger(Number(v)) && Number(v) >= 1) ||
+    "Servings must be at least 1.",
+];
+const timeRules = [
+  (v) =>
+    v === "" ||
+    v === null ||
+    v === undefined ||
+    (Number.isInteger(Number(v)) && Number(v) >= 1) ||
+    "Cook time must be at least 1 minute.",
+];
+
+const ingredientOptions = computed(() =>
+  ingredients.value.map((item) => ({
+    title: `${item.name} (${item.unit})`,
+    value: item.id,
+  }))
+);
+
+const imageSrc = computed(() => Utils.recipeImageUrl(recipe.value?.imagePath));
+
+function goHome() {
+  router.push({ name: "home" });
 }
 
-async function updateRecipe() {
-  await RecipeServices.updateRecipe(recipe.value.id, recipe.value)
-    .then(() => {
-      snackbar.value.value = true;
-      snackbar.value.color = "green";
-      snackbar.value.text = `${recipe.value.name} updated successfully!`;
-    })
-    .catch((error) => {
-      console.log(error);
-      snackbar.value.value = true;
-      snackbar.value.color = "error";
-      snackbar.value.text = error.response.data.message;
-    });
-  await getRecipe();
+function ingredientLine(row) {
+  const unit = row.ingredient?.unit ?? "";
+  const name = row.ingredient?.name ?? "";
+  const saved = savedQuantities.value[row.id] ?? row.quantity;
+  return `${saved} ${unit} ${name}`.trim();
 }
 
-async function getIngredients() {
-  await IngredientServices.getIngredients()
-    .then((response) => {
-      ingredients.value = response.data;
-    })
-    .catch((error) => {
-      console.log(error);
-      snackbar.value.value = true;
-      snackbar.value.color = "error";
-      snackbar.value.text = error.response.data.message;
-    });
+function rememberQuantity(row) {
+  if (!row?.id) {
+    return;
+  }
+  savedQuantities.value = {
+    ...savedQuantities.value,
+    [row.id]: Number(row.quantity),
+  };
 }
 
-async function getRecipeIngredients() {
-  await RecipeIngredientServices.getRecipeIngredientsForRecipe(route.params.id)
-    .then((response) => {
-      recipeIngredients.value = response.data;
-    })
-    .catch((error) => {
-      console.log(error);
-    });
+function quantityDirty(row) {
+  if (row.quantity === "" || row.quantity == null) {
+    return false;
+  }
+  const next = Number(row.quantity);
+  if (!Number.isFinite(next) || next <= 0) {
+    return false;
+  }
+  return next !== Number(savedQuantities.value[row.id]);
 }
 
-async function addIngredient() {
-  isAddIngredient.value = false;
-  newIngredient.value.recipeId = recipe.value.id;
-  newIngredient.value.ingredientId = selectedIngredient.value.id;
-  delete newIngredient.value.id;
-  await RecipeIngredientServices.addRecipeIngredient(newIngredient.value)
-    .then(() => {
-      snackbar.value.value = true;
-      snackbar.value.color = "green";
-      snackbar.value.text = `Ingredient added successfully!`;
-    })
-    .catch((error) => {
-      console.log(error);
-      snackbar.value.value = true;
-      snackbar.value.color = "error";
-      snackbar.value.text = error.response.data.message;
-    });
-  await getRecipeIngredients();
-}
-
-async function updateIngredient() {
-  isEditIngredient.value = false;
-  newIngredient.value.recipeId = recipe.value.id;
-  newIngredient.value.ingredientId = selectedIngredient.value.id;
-  console.log(newIngredient);
-
-  await RecipeIngredientServices.updateRecipeIngredient(newIngredient.value)
-    .then(() => {
-      snackbar.value.value = true;
-      snackbar.value.color = "green";
-      snackbar.value.text = `${selectedIngredient.value.name} updated successfully!`;
-    })
-    .catch((error) => {
-      console.log(error);
-      snackbar.value.value = true;
-      snackbar.value.color = "error";
-      snackbar.value.text = error.response.data.message;
-    });
-  await getRecipeIngredients();
-}
-
-async function deleteIngredient(ingredient) {
-  await RecipeIngredientServices.deleteRecipeIngredient(ingredient)
-    .then(() => {
-      snackbar.value.value = true;
-      snackbar.value.color = "green";
-      snackbar.value.text = `${ingredient.ingredient.name} deleted successfully!`;
-    })
-    .catch((error) => {
-      console.log(error);
-      snackbar.value.value = true;
-      snackbar.value.color = "error";
-      snackbar.value.text = error.response.data.message;
-    });
-  await getRecipeIngredients();
-}
-
-async function checkUpdateIngredient() {
-  if (newStep.value.recipeIngredient.length > 0) {
-    console.log(newStep.value.recipeIngredient);
-    for (let i = 0; i < newStep.value.recipeIngredient.length; i++) {
-      newIngredient.value.id = newStep.value.recipeIngredient[i].id;
-      newIngredient.value.quantity = newStep.value.recipeIngredient[i].quantity;
-      newIngredient.value.recipeStepId = newStep.value.id;
-      selectedIngredient.value.id =
-        newStep.value.recipeIngredient[i].ingredientId;
-      await updateIngredient();
-    }
+async function loadAll() {
+  error.value = "";
+  loading.value = true;
+  try {
+    const [recipeRes, ingredientRes] = await Promise.all([
+      RecipeServices.getRecipe(route.params.id),
+      IngredientServices.getIngredients(),
+    ]);
+    recipe.value = {
+      ...recipeRes.data,
+      servings: recipeRes.data.servings ?? "",
+      time: recipeRes.data.time ?? "",
+      category: recipeRes.data.category ?? null,
+      recipeStep: recipeRes.data.recipeStep ?? [],
+      recipeIngredient: recipeRes.data.recipeIngredient ?? [],
+    };
+    savedQuantities.value = Object.fromEntries(
+      (recipe.value.recipeIngredient ?? []).map((row) => [
+        row.id,
+        Number(row.quantity),
+      ])
+    );
+    ingredients.value = ingredientRes.data;
+  } catch {
+    error.value = "Unable to load recipe.";
+  } finally {
+    loading.value = false;
   }
 }
 
-async function getRecipeSteps() {
-  await RecipeStepServices.getRecipeStepsForRecipeWithIngredients(
-    route.params.id
-  )
-    .then((response) => {
-      recipeSteps.value = response.data;
-    })
-    .catch((error) => {
-      console.log(error);
+onMounted(loadAll);
+
+function savePayload() {
+  const body = {
+    name: recipe.value.name.trim(),
+    description: recipe.value.description.trim(),
+  };
+  if (recipe.value.servings !== "" && recipe.value.servings != null) {
+    body.servings = Number(recipe.value.servings);
+  }
+  if (recipe.value.time !== "" && recipe.value.time != null) {
+    body.time = Number(recipe.value.time);
+  }
+  if (recipe.value.category) {
+    body.category = recipe.value.category;
+  }
+  return body;
+}
+
+async function saveRecipe() {
+  error.value = "";
+  const { valid } = await form.value.validate();
+  if (!valid) {
+    return;
+  }
+  saving.value = true;
+  try {
+    await RecipeServices.updateRecipe(route.params.id, savePayload());
+    const file = Array.isArray(photo.value) ? photo.value[0] : photo.value;
+    if (file) {
+      await RecipeServices.uploadRecipeImage(route.params.id, file);
+    }
+    router.push({ name: "recipe", params: { id: route.params.id } });
+  } catch (err) {
+    error.value = err.response?.data?.message || "Unable to save recipe.";
+  } finally {
+    saving.value = false;
+  }
+}
+
+async function addPrivateIngredient() {
+  error.value = "";
+  if (!newIngredientName.value.trim()) {
+    error.value = "Ingredient name is required.";
+    return;
+  }
+  try {
+    const res = await IngredientServices.addIngredient({
+      name: newIngredientName.value.trim(),
+      unit: newIngredientUnit.value,
     });
+    ingredients.value = [...ingredients.value, res.data];
+    selectedIngredientId.value = res.data.id;
+    newIngredientName.value = "";
+  } catch (err) {
+    error.value =
+      err.response?.data?.message || "Unable to add ingredient.";
+  }
+}
+
+async function attachIngredient() {
+  attachError.value = "";
+  if (quantity.value === "" || quantity.value == null || Number(quantity.value) <= 0) {
+    attachError.value = "Quantity is required.";
+    return;
+  }
+  if (!selectedIngredientId.value) {
+    attachError.value = "Quantity is required.";
+    return;
+  }
+  try {
+    const res = await RecipeServices.addRecipeIngredient({
+      recipeId: route.params.id,
+      ingredientId: selectedIngredientId.value,
+      quantity: Number(quantity.value),
+    });
+    recipe.value.recipeIngredient = [
+      ...(recipe.value.recipeIngredient ?? []),
+      res.data,
+    ];
+    rememberQuantity(res.data);
+    quantity.value = "";
+  } catch (err) {
+    error.value =
+      err.response?.data?.message || "Unable to add ingredient.";
+  }
+}
+
+async function saveIngredient(row) {
+  attachError.value = "";
+  if (row.quantity === "" || row.quantity == null || Number(row.quantity) <= 0) {
+    attachError.value = "Quantity is required.";
+    return;
+  }
+  try {
+    const res = await RecipeServices.updateRecipeIngredient({
+      recipeId: route.params.id,
+      id: row.id,
+      quantity: Number(row.quantity),
+    });
+    recipe.value.recipeIngredient = recipe.value.recipeIngredient.map((item) =>
+      item.id === row.id ? res.data : item
+    );
+    rememberQuantity(res.data);
+  } catch (err) {
+    error.value =
+      err.response?.data?.message || "Unable to save ingredient.";
+  }
+}
+
+async function removeIngredient(row) {
+  await RecipeServices.deleteRecipeIngredient({
+    recipeId: route.params.id,
+    id: row.id,
+  });
+  recipe.value.recipeIngredient = recipe.value.recipeIngredient.filter(
+    (item) => item.id !== row.id
+  );
 }
 
 async function addStep() {
-  isAddStep.value = false;
-  newStep.value.recipeId = recipe.value.id;
-  delete newStep.value.id;
-  await RecipeStepServices.addRecipeStep(newStep.value)
-    .then((data) => {
-      newStep.value.id = data.data.id;
-      snackbar.value.value = true;
-      snackbar.value.color = "green";
-      snackbar.value.text = `Step added successfully!`;
-    })
-    .catch((error) => {
-      console.log(error);
-      snackbar.value.value = true;
-      snackbar.value.value.color = "error";
-      snackbar.value.text = error.response.data.message;
-    });
-
-  await checkUpdateIngredient();
-
-  await getRecipeSteps();
+  if (!newStepInstruction.value.trim()) {
+    error.value = "Instruction is required.";
+    return;
+  }
+  const res = await RecipeServices.addRecipeStep({
+    recipeId: route.params.id,
+    instruction: newStepInstruction.value.trim(),
+  });
+  recipe.value.recipeStep = [...(recipe.value.recipeStep ?? []), res.data];
+  newStepInstruction.value = "";
 }
 
-async function updateStep() {
-  isEditStep.value = false;
-  await RecipeStepServices.updateRecipeStep(newStep.value)
-    .then(() => {
-      snackbar.value.value = true;
-      snackbar.value.color = "green";
-      snackbar.value.text = `Step updated successfully!`;
-    })
-    .catch((error) => {
-      console.log(error);
-      snackbar.value.value = true;
-      snackbar.value.color = "error";
-      snackbar.value.text = error.response.data.message;
-    });
-
-  await checkUpdateIngredient();
-
-  await getRecipeSteps();
+async function saveStep(step) {
+  const res = await RecipeServices.updateRecipeStep({
+    recipeId: route.params.id,
+    id: step.id,
+    instruction: step.instruction,
+  });
+  step.instruction = res.data.instruction;
 }
 
-async function deleteStep(step) {
-  await RecipeStepServices.deleteRecipeStep(step)
-    .then(() => {
-      snackbar.value.value = true;
-      snackbar.value.color = "green";
-      snackbar.value.text = `Step deleted successfully!`;
-    })
-    .catch((error) => {
-      console.log(error);
-      snackbar.value.value = true;
-      snackbar.value.color = "error";
-      snackbar.value.text = error.response.data.message;
-    });
-
-  await getRecipeSteps();
-}
-
-function openAddIngredient() {
-  newIngredient.value.id = undefined;
-  newIngredient.value.quantity = undefined;
-  newIngredient.value.recipeStepId = undefined;
-  newIngredient.value.ingredientId = undefined;
-  selectedIngredient.value = undefined;
-  isAddIngredient.value = true;
-}
-
-function openEditIngredient(ingredient) {
-  newIngredient.value.id = ingredient.id;
-  newIngredient.value.quantity = ingredient.quantity;
-  newIngredient.value.recipeStepId = ingredient.recipeStepId;
-  newIngredient.value.ingredientId = ingredient.ingredientId;
-  selectedIngredient.value = ingredient.ingredient;
-  isEditIngredient.value = true;
-}
-
-function openAddStep() {
-  newStep.value.id = undefined;
-  newStep.value.stepNumber = undefined;
-  newStep.value.instruction = undefined;
-  newStep.value.recipeIngredient = [];
-  isAddStep.value = true;
-}
-
-function openEditStep(step) {
-  newStep.value.id = step.id;
-  newStep.value.stepNumber = step.stepNumber;
-  newStep.value.instruction = step.instruction;
-  newStep.value.recipeIngredient = step.recipeIngredient;
-  isEditStep.value = true;
-}
-
-function closeAddIngredient() {
-  isAddIngredient.value = false;
-}
-
-function closeEditIngredient() {
-  isEditIngredient.value = false;
-}
-
-function closeAddStep() {
-  isAddStep.value = false;
-}
-
-function closeEditStep() {
-  isEditStep.value = false;
-}
-
-function closeSnackBar() {
-  snackbar.value.value = false;
+async function removeStep(step) {
+  await RecipeServices.deleteRecipeStep({
+    recipeId: route.params.id,
+    id: step.id,
+  });
+  recipe.value.recipeStep = recipe.value.recipeStep.filter(
+    (item) => item.id !== step.id
+  );
 }
 </script>
 
 <template>
   <v-container>
-    <v-row align="center">
-      <v-col cols="10"
-        ><v-card-title class="pl-0 text-h4 font-weight-bold"
-          >Edit Recipe
-        </v-card-title>
-      </v-col>
-    </v-row>
-    <v-row>
-      <v-col>
-        <v-card class="rounded-lg elevation-5">
-          <v-card-text>
-            <v-row>
-              <v-col>
-                <v-text-field
-                  v-model="recipe.name"
-                  label="Name"
-                  required
-                ></v-text-field>
-                <v-text-field
-                  v-model.number="recipe.servings"
-                  label="Number of Servings"
-                  type="number"
-                ></v-text-field>
-                <v-text-field
-                  v-model.number="recipe.time"
-                  label="Time to Make (in minutes)"
-                  type="number"
-                ></v-text-field>
-                <v-switch
-                  v-model="recipe.isPublished"
-                  hide-details
-                  inset
-                  :label="`Publish? ${recipe.isPublished ? 'Yes' : 'No'}`"
-                ></v-switch>
-              </v-col>
-              <v-col>
-                <v-textarea
-                  v-model="recipe.description"
-                  rows="10"
-                  label="Description"
-                ></v-textarea>
-              </v-col>
-            </v-row>
-          </v-card-text>
-          <v-card-actions class="pt-0">
-            <v-btn variant="flat" color="primary" @click="updateRecipe()"
-              >Update Recipe</v-btn
-            >
-            <v-spacer></v-spacer>
-          </v-card-actions>
-        </v-card>
-      </v-col>
-    </v-row>
-    <v-row>
-      <v-col>
-        <v-card class="rounded-lg elevation-5">
-          <v-card-title
-            ><v-row align="center">
-              <v-col cols="10"
-                ><v-card-title class="headline">Ingredients </v-card-title>
-              </v-col>
-              <v-col class="d-flex justify-end" cols="2">
-                <v-btn color="accent" @click="openAddIngredient()">Add</v-btn>
-              </v-col>
-            </v-row>
-          </v-card-title>
-          <v-card-text>
-            <v-list>
-              <v-list-item
-                v-for="recipeIngredient in recipeIngredients"
-                :key="recipeIngredient.id"
-              >
-                <b
-                  >{{ recipeIngredient.quantity }}
-                  {{
-                    `${recipeIngredient.ingredient.unit}${
-                      recipeIngredient.quantity > 1 ? "s" : ""
-                    }`
-                  }}</b
-                >
-                of {{ recipeIngredient.ingredient.name }} (${{
-                  recipeIngredient.ingredient.pricePerUnit
-                }}/{{ recipeIngredient.ingredient.unit }})
-                <template v-slot:append>
-                  <v-row>
-                    <v-icon
-                      class="mx-2"
-                      size="x-small"
-                      icon="mdi-pencil"
-                      @click="openEditIngredient(recipeIngredient)"
-                    ></v-icon>
-                    <v-icon
-                      class="mx-2"
-                      size="x-small"
-                      icon="mdi-trash-can"
-                      @click="deleteIngredient(recipeIngredient)"
-                    ></v-icon>
-                  </v-row>
-                </template>
-              </v-list-item>
-            </v-list>
-          </v-card-text>
-        </v-card>
-      </v-col>
-    </v-row>
-    <v-row>
-      <v-col>
-        <v-card class="rounded-lg elevation-5">
-          <v-card-title
-            ><v-row align="center">
-              <v-col cols="10"
-                ><v-card-title class="headline">Steps </v-card-title>
-              </v-col>
-              <v-col class="d-flex justify-end" cols="2">
-                <v-btn color="accent" @click="openAddStep()">Add</v-btn>
-              </v-col>
-            </v-row>
-          </v-card-title>
-          <v-card-text>
-            <v-table>
-              <tbody>
-                <tr v-for="step in recipeSteps" :key="step.id">
-                  <td>{{ step.stepNumber }}</td>
-                  <td>{{ step.instruction }}</td>
-                  <td>
-                    <v-chip
-                      size="small"
-                      v-for="ingredient in step.recipeIngredient"
-                      :key="ingredient.id"
-                      pill
-                      >{{ ingredient.ingredient.name }}</v-chip
-                    >
-                  </td>
-                  <td>
-                    <v-icon
-                      size="x-small"
-                      icon="mdi-pencil"
-                      @click="openEditStep(step)"
-                    ></v-icon>
-                  </td>
-                  <td>
-                    <v-icon
-                      size="x-small"
-                      icon="mdi-trash-can"
-                      @click="deleteStep(step)"
-                    >
-                    </v-icon>
-                  </td>
-                </tr>
-              </tbody>
-            </v-table>
-          </v-card-text> </v-card
-      ></v-col>
-    </v-row>
-
-    <v-dialog
-      persistent
-      :model-value="isAddIngredient || isEditIngredient"
-      width="800"
+    <v-progress-linear v-if="loading" indeterminate class="mb-4" />
+    <v-alert v-if="error" type="error" density="compact" class="mb-4">
+      {{ error }}
+    </v-alert>
+    <v-btn
+      color="secondary"
+      variant="text"
+      class="mb-2 px-0"
+      prepend-icon="mdi-arrow-left"
+      @click="goHome"
     >
-      <v-card class="rounded-lg elevation-5">
-        <v-card-title class="headline mb-2">{{
-          isAddIngredient
-            ? "Add Ingredient"
-            : isEditIngredient
-            ? "Edit Ingredient"
-            : ""
-        }}</v-card-title>
-        <v-card-text>
-          <v-row>
-            <v-col cols="3">
-              <v-text-field
-                v-model="newIngredient.quantity"
-                label="Quantity"
-                type="number"
-                required
-              >
-              </v-text-field>
-            </v-col>
+      Back to My Recipes
+    </v-btn>
+    <v-form v-if="!loading" ref="form" @submit.prevent="saveRecipe">
+      <h1 class="text-h5 text-primary mb-4">Edit recipe</h1>
+      <v-img
+        v-if="imageSrc"
+        :src="imageSrc"
+        max-height="240"
+        class="mb-4 rounded-lg"
+        cover
+      />
+      <v-text-field
+        v-model="recipe.name"
+        label="Name"
+        name="name"
+        density="comfortable"
+        rounded="lg"
+        :rules="nameRules"
+      />
+      <v-textarea
+        v-model="recipe.description"
+        label="Description"
+        name="description"
+        density="comfortable"
+        rounded="lg"
+        :rules="descriptionRules"
+      />
+      <v-text-field
+        v-model="recipe.servings"
+        label="Servings"
+        name="servings"
+        type="number"
+        density="comfortable"
+        rounded="lg"
+        :rules="servingsRules"
+      />
+      <v-text-field
+        v-model="recipe.time"
+        label="Time (minutes)"
+        name="time"
+        type="number"
+        density="comfortable"
+        rounded="lg"
+        :rules="timeRules"
+      />
+      <v-select
+        v-model="recipe.category"
+        :items="CATEGORIES"
+        label="Category"
+        density="comfortable"
+        rounded="lg"
+        clearable
+      />
+      <v-file-input
+        v-model="photo"
+        label="Photo"
+        accept="image/jpeg,image/png"
+        density="comfortable"
+        rounded="lg"
+      />
+      <v-btn
+        type="submit"
+        color="primary"
+        variant="elevated"
+        class="oc-cta mb-8"
+        :loading="saving"
+      >
+        Save Recipe
+      </v-btn>
 
-            <v-col>
-              <v-select
-                v-model="selectedIngredient"
-                :items="ingredients"
-                item-title="name"
-                item-value="unit"
-                label="Ingredients"
-                return-object
-                required
-              >
-                <template v-slot:prepend>
-                  {{
-                    `${
-                      selectedIngredient && selectedIngredient.unit
-                        ? selectedIngredient.unit
-                        : ""
-                    }${newIngredient.quantity > 1 ? "s" : ""}`
-                  }}
-                  of
-                </template>
-              </v-select>
-            </v-col>
-          </v-row>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn
-            variant="flat"
-            color="secondary"
-            @click="
-              isAddIngredient
-                ? closeAddIngredient()
-                : isEditIngredient
-                ? closeEditIngredient()
-                : false
-            "
-            >Close</v-btn
-          >
-          <v-btn
-            variant="flat"
-            color="primary"
-            @click="
-              isAddIngredient
-                ? addIngredient()
-                : isEditIngredient
-                ? updateIngredient()
-                : false
-            "
-            >{{
-              isAddIngredient
-                ? "Add Ingredient"
-                : isEditIngredient
-                ? "Update Ingredient"
-                : ""
-            }}</v-btn
-          >
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-
-    <v-dialog persistent :model-value="isAddStep || isEditStep" width="800">
-      <v-card class="rounded-lg elevation-5">
-        <v-card-title class="headline mb-2">
-          {{ isAddStep ? "Add Step" : isEditStep ? "Edit Step" : "" }}
-        </v-card-title>
-        <v-card-text>
+      <h2 class="text-h6 text-primary">Ingredients</h2>
+      <ul class="mb-4">
+        <li
+          v-for="row in recipe.recipeIngredient"
+          :key="row.id"
+          class="d-flex align-center mb-2"
+        >
+          <span class="mr-2">{{ ingredientLine(row) }}</span>
           <v-text-field
-            v-model="newStep.stepNumber"
-            label="Number"
+            v-model="row.quantity"
+            label="Quantity"
             type="number"
-            required
-          ></v-text-field>
-
-          <v-textarea
-            v-model="newStep.instruction"
-            label="Instruction"
-            required
-          ></v-textarea>
-
-          <v-select
-            v-model="newStep.recipeIngredient"
-            :items="recipeIngredients"
-            item-title="ingredient.name"
-            item-value="id"
-            label="Ingredients"
-            return-object
-            multiple
-            chips
-            required
-          ></v-select>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
+            density="compact"
+            hide-details
+            class="mr-2"
+            style="max-width: 120px"
+          />
           <v-btn
-            variant="flat"
-            color="secondary"
-            @click="
-              isAddStep ? closeAddStep() : isEditStep ? closeEditStep() : false
-            "
-            >Close</v-btn
+            :color="quantityDirty(row) ? 'primary' : 'secondary'"
+            :variant="quantityDirty(row) ? 'elevated' : 'text'"
+            size="small"
+            class="oc-cta"
+            :disabled="!quantityDirty(row)"
+            aria-label="Save ingredient quantity"
+            @click="saveIngredient(row)"
           >
+            Save
+          </v-btn>
           <v-btn
-            variant="flat"
-            color="primary"
-            @click="isAddStep ? addStep() : isEditStep ? updateStep() : false"
-            >{{
-              isAddStep ? "Add Step" : isEditStep ? "Update Step" : ""
-            }}</v-btn
-          >
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-    <v-snackbar v-model="snackbar.value" rounded="pill">
-      {{ snackbar.text }}
+            icon="mdi-delete"
+            variant="text"
+            size="small"
+            aria-label="Remove ingredient"
+            @click="removeIngredient(row)"
+          />
+        </li>
+      </ul>
+      <v-select
+        v-model="selectedIngredientId"
+        :items="ingredientOptions"
+        label="Ingredients"
+        density="comfortable"
+        rounded="lg"
+      />
+      <v-text-field
+        v-model="quantity"
+        label="Quantity"
+        name="quantity"
+        type="number"
+        density="comfortable"
+        rounded="lg"
+      />
+      <p v-if="attachError" class="text-error mb-2">{{ attachError }}</p>
+      <v-btn
+        color="primary"
+        variant="elevated"
+        class="oc-cta mb-4"
+        @click="attachIngredient"
+      >
+        Add
+      </v-btn>
+      <v-text-field
+        v-model="newIngredientName"
+        label="New ingredient name"
+        name="newIngredientName"
+        density="comfortable"
+        rounded="lg"
+      />
+      <v-select
+        v-model="newIngredientUnit"
+        :items="UNITS"
+        label="Unit"
+        density="comfortable"
+        rounded="lg"
+      />
+      <v-btn
+        color="primary"
+        variant="elevated"
+        class="oc-cta mb-8"
+        @click="addPrivateIngredient"
+      >
+        Add ingredient
+      </v-btn>
 
-      <template v-slot:actions>
-        <v-btn :color="snackbar.color" variant="text" @click="closeSnackBar()">
-          Close
-        </v-btn>
-      </template>
-    </v-snackbar>
+      <h2 class="text-h6 text-primary">Steps</h2>
+      <div
+        v-for="step in recipe.recipeStep"
+        :key="step.id"
+        class="d-flex align-center mb-2"
+      >
+        <span class="mr-2">{{ step.stepNumber }}.</span>
+        <v-text-field
+          v-model="step.instruction"
+          density="comfortable"
+          rounded="lg"
+          hide-details
+          @change="saveStep(step)"
+        />
+        <v-btn
+          icon="mdi-delete"
+          variant="text"
+          size="small"
+          aria-label="Remove step"
+          @click="removeStep(step)"
+        />
+      </div>
+      <v-text-field
+        v-model="newStepInstruction"
+        label="Instruction"
+        name="instruction"
+        density="comfortable"
+        rounded="lg"
+      />
+      <v-btn
+        color="primary"
+        variant="elevated"
+        class="oc-cta"
+        @click="addStep"
+      >
+        Add Step
+      </v-btn>
+    </v-form>
   </v-container>
 </template>

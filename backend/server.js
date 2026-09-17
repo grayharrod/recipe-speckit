@@ -1,9 +1,12 @@
 require("dotenv").config();
 
+const path = require("path");
 const express = require("express");
 const cors = require("cors");
+const { ensureUploadDir } = require("./app/middleware/recipeUpload");
 
 const app = express();
+ensureUploadDir();
 
 const db = require("./app/models");
 
@@ -33,6 +36,11 @@ app.use(express.urlencoded({ extended: true }));
 app.get("/", (req, res) => {
   res.json({ message: "Welcome to the recipe backend." });
 });
+
+app.use(
+  "/recipeapi/uploads",
+  express.static(path.join(__dirname, "uploads"))
+);
 
 require("./app/routes/auth.routes.js")(app);
 require("./app/routes/ingredient.routes")(app);
