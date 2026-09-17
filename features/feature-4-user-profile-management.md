@@ -5,7 +5,7 @@
 **Status:** Ready
 **Created:** 2026-09-15
 **Input:** Signed-in users view and edit their profile from a menu-bar dropdown; logout moves to profile menu
-**Depends on:** [Feature 1 — User Authentication](feature-1-user-auth.md), [Feature 2 — Recipe Management](feature-2-pecipe-management.md), [Feature 3 — Ingredent Management](feature-3-ingredent-management.md)
+**Depends on:** [Feature 1 — User Authentication](feature-1-user-auth.md), [Feature 2 — Recipe Management](feature-2-recipe-management.md), [Feature 3 — Ingredient Management](feature-3-ingredient-management.md)
 **Related:** `features/reference/api.md`, `features/reference/behavior.md`, [Feature 1](feature-1-user-auth.md)
 
 ## User Stories
