@@ -132,6 +132,10 @@ onUnmounted(() => {
   window.removeEventListener("user-logged-in", refreshUser);
 });
 
+function goIngredients() {
+  router.push({ name: "ingredients" });
+}
+
 defineExpose({
   logout,
   openEditProfile,
@@ -141,7 +145,7 @@ defineExpose({
 <template>
   <div>
     <v-app-bar color="primary" app dark>
-      <router-link :to="{ name: 'recipes' }">
+      <router-link :to="{ name: 'home' }">
         <v-img
           class="mx-2"
           :src="logoURL"
@@ -151,14 +155,20 @@ defineExpose({
         ></v-img>
       </router-link>
       <v-toolbar-title class="title">
-        {{ title }}
+        <router-link
+          :to="{ name: 'home' }"
+          class="text-decoration-none text-white"
+        >
+          {{ title }}
+        </router-link>
       </v-toolbar-title>
       <v-spacer></v-spacer>
-      <v-btn class="mx-2" :to="{ name: 'recipes' }"> Recipes </v-btn>
-      <v-btn v-if="user === null" class="mx-2" :to="{ name: 'login' }">
-        Login
-      </v-btn>
-      <v-btn v-if="user !== null" class="mx-2" :to="{ name: 'ingredients' }">
+      <v-btn
+        v-if="user !== null"
+        class="mx-2 text-white"
+        variant="text"
+        @click="goIngredients"
+      >
         Ingredients
       </v-btn>
       <v-menu

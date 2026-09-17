@@ -5,7 +5,7 @@ import MenuBar from "./components/MenuBar.vue";
 
 const route = useRoute();
 const hideMenu = computed(() =>
-  ["login", "register", "home"].includes(route.name)
+  ["login", "register"].includes(route.name)
 );
 </script>
 

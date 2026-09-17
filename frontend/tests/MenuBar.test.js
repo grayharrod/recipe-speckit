@@ -44,9 +44,9 @@ const signedInUser = {
 const menuRoutes = [
   { path: "/", name: "login", component: { template: "<div>login</div>" } },
   {
-    path: "/recipes",
-    name: "recipes",
-    component: { template: "<div>recipes</div>" },
+    path: "/home",
+    name: "home",
+    component: { template: "<div>home</div>" },
   },
   {
     path: "/ingredients",
@@ -59,7 +59,7 @@ async function mountMenuBar() {
   Utils.setStore("user", signedInUser);
   const vuetify = createTestVuetify();
   const router = createTestRouter(menuRoutes);
-  await router.push({ name: "recipes" });
+  await router.push({ name: "home" });
   await router.isReady();
 
   const root = mount(

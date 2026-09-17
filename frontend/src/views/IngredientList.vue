@@ -1,223 +1,246 @@
 <script setup>
-import { onMounted } from "vue";
-import { ref } from "vue";
+import { onMounted, ref } from "vue";
 import IngredientServices from "../services/IngredientServices.js";
-
-const units = [
-  "cup",
-  "gallon",
-  "gram",
-  "kilogram",
-  "liter",
-  "milliliter",
-  "ounce",
-  "pint",
-  "piece",
-  "pound",
-  "quart",
-  "tablespoon",
-  "teaspoon",
-  "unit",
-];
+import { UNITS } from "../config/recipeConstants.js";
 
 const ingredients = ref([]);
-const isAdd = ref(false);
+const loading = ref(false);
+const error = ref("");
+const formOpen = ref(false);
 const isEdit = ref(false);
-const user = ref(null);
-const snackbar = ref({
-  value: false,
-  color: "",
-  text: "",
-});
-const newIngredient = ref({
+const formLoading = ref(false);
+const formError = ref("");
+const formRef = ref(null);
+const deleteOpen = ref(false);
+const deleteTarget = ref(null);
+const formIngredient = ref({
   id: undefined,
-  name: undefined,
-  unit: undefined,
-  pricePerUnit: undefined,
+  name: "",
+  unit: "cup",
 });
 
-onMounted(async () => {
-  await getIngredients();
-  user.value = JSON.parse(localStorage.getItem("user"));
-});
+const nameRules = [
+  (v) => !!String(v ?? "").trim() || "Ingredient name is required.",
+];
+const unitRules = [(v) => !!v || "Unit is required."];
 
-async function getIngredients() {
-  await IngredientServices.getIngredients()
-    .then((response) => {
-      ingredients.value = response.data;
-    })
-    .catch((error) => {
-      console.log(error);
-      snackbar.value.value = true;
-      snackbar.value.color = "error";
-      snackbar.value.text = error.response.data.message;
-    });
+async function loadIngredients() {
+  error.value = "";
+  loading.value = true;
+  try {
+    const res = await IngredientServices.getIngredients();
+    ingredients.value = res.data;
+  } catch {
+    error.value = "Unable to load ingredients.";
+  } finally {
+    loading.value = false;
+  }
 }
 
-async function addIngredient() {
-  isAdd.value = false;
-  delete newIngredient.id;
-  await IngredientServices.addIngredient(newIngredient.value)
-    .then(() => {
-      snackbar.value.value = true;
-      snackbar.value.color = "green";
-      snackbar.value.text = `${newIngredient.value.name} added successfully!`;
-    })
-    .catch((error) => {
-      console.log(error);
-      snackbar.value.value = true;
-      snackbar.value.color = "error";
-      snackbar.value.text = error.response.data.message;
-    });
-  await getIngredients();
-}
-
-async function updateIngredient() {
-  isEdit.value = false;
-  await IngredientServices.updateIngredient(newIngredient.value)
-    .then(() => {
-      snackbar.value.value = true;
-      snackbar.value.color = "green";
-      snackbar.value.text = `${newIngredient.name} updated successfully!`;
-    })
-    .catch((error) => {
-      console.log(error);
-      snackbar.value.value = true;
-      snackbar.value.color = "error";
-      snackbar.value.text = error.response.data.message;
-    });
-  await getIngredients();
-}
+onMounted(loadIngredients);
 
 function openAdd() {
-  newIngredient.value.name = undefined;
-  newIngredient.value.unit = undefined;
-  newIngredient.value.pricePerUnit = undefined;
-  isAdd.value = true;
-}
-
-function closeAdd() {
-  isAdd.value = false;
+  formError.value = "";
+  isEdit.value = false;
+  formIngredient.value = { id: undefined, name: "", unit: "cup" };
+  formOpen.value = true;
 }
 
 function openEdit(item) {
-  newIngredient.value.id = item.id;
-  newIngredient.value.name = item.name;
-  newIngredient.value.unit = item.unit;
-  newIngredient.value.pricePerUnit = item.pricePerUnit;
+  formError.value = "";
   isEdit.value = true;
+  formIngredient.value = {
+    id: item.id,
+    name: item.name,
+    unit: item.unit,
+  };
+  formOpen.value = true;
 }
 
-function closeEdit() {
-  isEdit.value = false;
+function closeForm() {
+  formOpen.value = false;
 }
 
-function closeSnackBar() {
-  snackbar.value.value = false;
+function openDelete(item) {
+  deleteTarget.value = item;
+  deleteOpen.value = true;
+}
+
+function cancelDelete() {
+  deleteOpen.value = false;
+  deleteTarget.value = null;
+}
+
+async function submitForm() {
+  formError.value = "";
+  const { valid } = await formRef.value.validate();
+  if (!valid) {
+    return;
+  }
+  formLoading.value = true;
+  const payload = {
+    name: formIngredient.value.name.trim(),
+    unit: formIngredient.value.unit,
+  };
+  try {
+    if (isEdit.value) {
+      await IngredientServices.updateIngredient({
+        id: formIngredient.value.id,
+        ...payload,
+      });
+    } else {
+      await IngredientServices.addIngredient(payload);
+    }
+    formOpen.value = false;
+    await loadIngredients();
+  } catch (err) {
+    formError.value =
+      err.response?.data?.message || "Unable to save ingredient.";
+  } finally {
+    formLoading.value = false;
+  }
+}
+
+async function confirmDelete() {
+  if (!deleteTarget.value) {
+    return;
+  }
+  try {
+    await IngredientServices.deleteIngredient(deleteTarget.value.id);
+    deleteOpen.value = false;
+    deleteTarget.value = null;
+    await loadIngredients();
+  } catch (err) {
+    error.value =
+      err.response?.data?.message || "Unable to load ingredients.";
+  }
 }
 </script>
 
 <template>
   <v-container>
-    <div id="body">
-      <v-row align="center" class="mb-4">
-        <v-col cols="10"
-          ><v-card-title class="pl-0 text-h4 font-weight-bold"
-            >Ingredients
-          </v-card-title>
-        </v-col>
-        <v-col class="d-flex justify-end" cols="2">
-          <v-btn v-if="user !== null" color="accent" @click="openAdd()"
-            >Add</v-btn
-          >
-        </v-col>
-      </v-row>
-
-      <v-table class="rounded-lg elevation-5">
-        <thead>
-          <tr>
-            <th class="text-left">Name</th>
-            <th class="text-left">Unit</th>
-            <th class="text-left">Price Per Unit</th>
-            <th class="text-left">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="item in ingredients" :key="item.name">
-            <td>{{ item.name }}</td>
-            <td>{{ item.unit }}</td>
-            <td>${{ item.pricePerUnit }}</td>
-            <td>
-              <v-icon
-                size="small"
-                icon="mdi-pencil"
-                @click="openEdit(item)"
-              ></v-icon>
-            </td>
-          </tr>
-        </tbody>
-      </v-table>
-
-      <v-dialog persistent :model-value="isAdd || isEdit" width="800">
-        <v-card class="rounded-lg elevation-5">
-          <v-card-item>
-            <v-card-title class="headline mb-2"
-              >{{ isAdd ? "Add Ingredient" : isEdit ? "Edit Ingredient" : "" }}
-            </v-card-title>
-          </v-card-item>
-          <v-card-text>
-            <v-text-field
-              v-model="newIngredient.name"
-              label="Name"
-              required
-            ></v-text-field>
-            <v-select
-              v-model="newIngredient.unit"
-              :items="units"
-              label="Unit"
-              required
-            >
-            </v-select>
-            <v-text-field
-              v-model="newIngredient.pricePerUnit"
-              label="Price Per Unit"
-              type="number"
-            ></v-text-field>
-          </v-card-text>
-          <v-card-actions>
-            <v-spacer></v-spacer>
-            <v-btn
-              variant="flat"
-              color="secondary"
-              @click="isAdd ? closeAdd() : isEdit ? closeEdit() : false"
-              >Close</v-btn
-            >
-            <v-btn
-              variant="flat"
-              color="primary"
-              @click="
-                isAdd ? addIngredient() : isEdit ? updateIngredient() : false
-              "
-              >{{
-                isAdd ? "Add Ingredient" : isEdit ? "Update Ingredient" : ""
-              }}</v-btn
-            >
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
-      <v-snackbar v-model="snackbar.value" rounded="pill">
-        {{ snackbar.text }}
-
-        <template v-slot:actions>
-          <v-btn
-            :color="snackbar.color"
-            variant="text"
-            @click="closeSnackBar()"
-          >
-            Close
-          </v-btn>
-        </template>
-      </v-snackbar>
+    <div class="d-flex align-center justify-space-between mb-4">
+      <h1 class="text-h5 text-primary">Ingredients</h1>
+      <v-btn
+        color="primary"
+        variant="elevated"
+        class="oc-cta"
+        @click="openAdd"
+      >
+        + Add Ingredient
+      </v-btn>
     </div>
+    <v-progress-linear v-if="loading" indeterminate class="mb-4" />
+    <v-alert v-if="error" type="error" density="compact" class="mb-4">
+      {{ error }}
+    </v-alert>
+    <p
+      v-if="!loading && ingredients.length === 0"
+      class="text-medium-emphasis"
+    >
+      No ingredients yet. Add your first ingredient.
+    </p>
+    <v-table v-else-if="!loading" class="rounded-lg">
+      <thead>
+        <tr>
+          <th class="text-left">Name</th>
+          <th class="text-left">Unit</th>
+          <th class="text-left">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="item in ingredients" :key="item.id">
+          <td>{{ item.name }}</td>
+          <td>{{ item.unit }}</td>
+          <td>
+            <v-btn
+              icon="mdi-pencil"
+              variant="text"
+              size="small"
+              aria-label="Edit ingredient"
+              @click="openEdit(item)"
+            />
+            <v-btn
+              icon="mdi-delete"
+              variant="text"
+              size="small"
+              aria-label="Delete ingredient"
+              @click="openDelete(item)"
+            />
+          </td>
+        </tr>
+      </tbody>
+    </v-table>
+
+    <v-dialog v-model="formOpen" max-width="520" persistent attach>
+      <v-card rounded="lg">
+        <v-card-item>
+          <v-card-title class="text-primary">
+            {{ isEdit ? "Edit Ingredient" : "Add Ingredient" }}
+          </v-card-title>
+        </v-card-item>
+        <v-card-text>
+          <v-alert
+            v-if="formError"
+            type="error"
+            density="compact"
+            class="mb-4"
+          >
+            {{ formError }}
+          </v-alert>
+          <v-form ref="formRef" @submit.prevent="submitForm">
+            <v-text-field
+              v-model="formIngredient.name"
+              label="Name"
+              name="name"
+              density="comfortable"
+              rounded="lg"
+              :rules="nameRules"
+            />
+            <v-select
+              v-model="formIngredient.unit"
+              :items="UNITS"
+              label="Unit"
+              name="unit"
+              density="comfortable"
+              rounded="lg"
+              :rules="unitRules"
+            />
+          </v-form>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn color="secondary" variant="text" @click="closeForm">
+            Cancel
+          </v-btn>
+          <v-btn
+            color="primary"
+            variant="elevated"
+            class="oc-cta"
+            :loading="formLoading"
+            @click="submitForm"
+          >
+            {{ isEdit ? "Save Ingredient" : "Add Ingredient" }}
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="deleteOpen" max-width="420" persistent attach>
+      <v-card rounded="lg">
+        <v-card-item>
+          <v-card-title class="text-primary">Delete this ingredient?</v-card-title>
+        </v-card-item>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn color="secondary" variant="text" @click="cancelDelete">
+            Cancel
+          </v-btn>
+          <v-btn color="error" variant="elevated" class="oc-cta" @click="confirmDelete">
+            Delete
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-container>
 </template>

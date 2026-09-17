@@ -17,15 +17,20 @@ const router = createRouter({
     {
       path: "/home",
       name: "home",
-      component: () => import("./views/Home.vue"),
-    },
-    {
-      path: "/recipes",
-      name: "recipes",
       component: () => import("./views/RecipeList.vue"),
     },
     {
+      path: "/recipes",
+      redirect: { name: "home" },
+    },
+    {
       path: "/recipe/:id",
+      name: "recipe",
+      props: true,
+      component: () => import("./views/RecipeDetail.vue"),
+    },
+    {
+      path: "/recipe/:id/edit",
       name: "editRecipe",
       props: true,
       component: () => import("./views/EditRecipe.vue"),
