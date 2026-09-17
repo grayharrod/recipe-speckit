@@ -5,7 +5,17 @@ import * as directives from "vuetify/directives";
 import { createRouter, createMemoryHistory } from "vue-router";
 
 export function createTestVuetify() {
-  return createVuetify({ components, directives });
+  return createVuetify({
+    components,
+    directives,
+    theme: {
+      defaultTheme: "bright",
+      themes: {
+        bright: { dark: false, colors: { primary: "#80162B" } },
+        dark: { dark: true, colors: { primary: "#80162B" } },
+      },
+    },
+  });
 }
 
 export function createTestRouter(routes) {
@@ -37,5 +47,5 @@ export async function mountView(component, { routes } = {}) {
     },
   });
 
-  return { wrapper, router };
+  return { wrapper, router, vuetify };
 }

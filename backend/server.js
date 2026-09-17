@@ -16,7 +16,7 @@ if (process.env.NODE_ENV !== "test") {
 }
 
 var corsOptions = {
-  origin: "http://localhost:8082",
+  origin: ["http://localhost:8082", "http://localhost:8083"],
   credentials: true,
 };
 

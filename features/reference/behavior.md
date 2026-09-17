@@ -18,3 +18,4 @@
 | Session key in the browser is `localStorage.user` | `Utils.setStore("user", …)` | Feature 1 |
 | 401 / unauthorized API responses clear `user` and send the user to login | axios `transformResponse` + interceptor | Feature 1 |
 | Feature 1 auth screens (login, register, home) have no MenuBar | `App.vue` | Feature 1 |
+| Signed-in users can toggle bright (default) and dark mode from a top-right button | `ThemeToggle.vue` + Vuetify themes `bright` / `dark` | Feature 1 US-1.6 |
