@@ -119,7 +119,7 @@
 - Search filters the already-fetched list in the browser.
 - Category is a single optional dropdown on the recipe, not a tags table.
 - Photos are stored on the local server (no cloud object storage).
-- Starter fields `pricePerUnit`, public/published browsing, PDF export, and linking an ingredient to a specific step are unused in this feature.
+- Starter fields `pricePerUnit`, public/published browsing, and linking an ingredient to a specific step are unused in this feature. PDF / Excel export is [Feature 5](./feature-5-export-recipes.md).
 
 ## Edge Cases
 
@@ -825,7 +825,7 @@ Do not implement behavior not in this spec.
 
 - Dedicated Ingredients catalog page (add/edit/delete list) — later feature (Feature 3)
 - Publishing or sharing recipes (`isPublished` UI, public recipe browsing)
-- Recipe PDF export
+- Recipe PDF / Excel export — [Feature 5](./feature-5-export-recipes.md)
 - Ingredient `pricePerUnit` and costing
 - Linking a recipe ingredient to a specific step (`recipeStepId`)
 - Recipe duplication, tags (beyond the single category dropdown), or nutrition

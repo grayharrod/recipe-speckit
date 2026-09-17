@@ -514,5 +514,6 @@ Add the dedicated Ingredients catalog page (list/create/edit/delete) and MenuBar
 *   Global (not per-user) ingredient catalog
 *   `pricePerUnit` and costing
 *   Linking a recipe ingredient to a step (`recipeStepId`)
-*   Publishing, PDF export, nutrition, unit conversion
+*   Publishing, nutrition, unit conversion
+*   Recipe PDF / Excel export — [Feature 5](./feature-5-export-recipes.md)
 *   Unscoped delete-all ingredients
