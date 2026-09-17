@@ -3,15 +3,7 @@ import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import RecipeServices from "../services/RecipeServices.js";
 import Utils from "../config/utils.js";
-
-const CATEGORIES = [
-  "Breakfast",
-  "Lunch",
-  "Dinner",
-  "Dessert",
-  "Snack",
-  "Other",
-];
+import { CATEGORIES } from "../config/recipeConstants.js";
 
 const router = useRouter();
 const recipes = ref([]);
@@ -102,6 +94,10 @@ function openAdd() {
 
 function closeAdd() {
   addOpen.value = false;
+}
+
+function recipeThumb(recipe) {
+  return Utils.recipeImageUrl(recipe.imagePath);
 }
 
 function openRecipe(recipe) {
@@ -219,12 +215,8 @@ async function submitAdd() {
             class="px-0"
           >
             <template #prepend>
-              <v-avatar
-                v-if="Utils.recipeImageUrl(recipe.imagePath)"
-                rounded="lg"
-                size="48"
-              >
-                <v-img :src="Utils.recipeImageUrl(recipe.imagePath)" cover />
+              <v-avatar v-if="recipeThumb(recipe)" rounded="lg" size="48">
+                <v-img :src="recipeThumb(recipe)" cover />
               </v-avatar>
             </template>
             <v-list-item-title>

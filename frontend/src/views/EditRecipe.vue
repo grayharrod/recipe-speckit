@@ -3,35 +3,8 @@ import { computed, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import RecipeServices from "../services/RecipeServices.js";
 import IngredientServices from "../services/IngredientServices.js";
-import RecipeStepServices from "../services/RecipeStepServices.js";
-import RecipeIngredientServices from "../services/RecipeIngredientServices.js";
 import Utils from "../config/utils.js";
-
-const CATEGORIES = [
-  "Breakfast",
-  "Lunch",
-  "Dinner",
-  "Dessert",
-  "Snack",
-  "Other",
-];
-
-const UNITS = [
-  "cup",
-  "gallon",
-  "gram",
-  "kilogram",
-  "liter",
-  "milliliter",
-  "ounce",
-  "pint",
-  "piece",
-  "pound",
-  "quart",
-  "tablespoon",
-  "teaspoon",
-  "unit",
-];
+import { CATEGORIES, UNITS } from "../config/recipeConstants.js";
 
 const route = useRoute();
 const router = useRouter();
@@ -196,7 +169,7 @@ async function attachIngredient() {
     return;
   }
   try {
-    const res = await RecipeIngredientServices.addRecipeIngredient({
+    const res = await RecipeServices.addRecipeIngredient({
       recipeId: route.params.id,
       ingredientId: selectedIngredientId.value,
       quantity: Number(quantity.value),
@@ -213,7 +186,7 @@ async function attachIngredient() {
 }
 
 async function removeIngredient(row) {
-  await RecipeIngredientServices.deleteRecipeIngredient({
+  await RecipeServices.deleteRecipeIngredient({
     recipeId: route.params.id,
     id: row.id,
   });
@@ -227,7 +200,7 @@ async function addStep() {
     error.value = "Instruction is required.";
     return;
   }
-  const res = await RecipeStepServices.addRecipeStep({
+  const res = await RecipeServices.addRecipeStep({
     recipeId: route.params.id,
     instruction: newStepInstruction.value.trim(),
   });
@@ -236,7 +209,7 @@ async function addStep() {
 }
 
 async function saveStep(step) {
-  const res = await RecipeStepServices.updateRecipeStep({
+  const res = await RecipeServices.updateRecipeStep({
     recipeId: route.params.id,
     id: step.id,
     instruction: step.instruction,
@@ -245,7 +218,7 @@ async function saveStep(step) {
 }
 
 async function removeStep(step) {
-  await RecipeStepServices.deleteRecipeStep({
+  await RecipeServices.deleteRecipeStep({
     recipeId: route.params.id,
     id: step.id,
   });

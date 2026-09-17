@@ -14,62 +14,62 @@
 
 ### US-2.1: View my recipes
 
-**As a** signed-in user
-**I want to** see a list of my recipes after I sign in
+**As a** signed-in user  
+**I want to** see a list of my recipes after I sign in  
 **So that** I can find and open the recipes I have saved
 
-**Priority:** P1
-**Independent test:** Sign in as a user who owns recipes and land on home showing only that user's recipe names, with search and empty-state copy when the list is empty
+**Priority:** P1  
+**Independent test:** Sign in as a user who owns recipes and land on home showing only that user's recipe names, with search and empty-state copy when the list is empty  
 **Acceptance scenarios:** see ### US-2.1 under Acceptance Criteria
 
 ### US-2.2: Create a recipe
 
-**As a** signed-in user
-**I want to** add a new recipe from the list
+**As a** signed-in user  
+**I want to** add a new recipe from the list  
 **So that** I can start capturing a dish I want to cook
 
-**Priority:** P1
-**Independent test:** Open the add dialog, submit a valid name, and see the new recipe on the list and in the database owned by the signed-in user
+**Priority:** P1  
+**Independent test:** Open the add dialog, submit a valid name, and see the new recipe on the list and in the database owned by the signed-in user  
 **Acceptance scenarios:** see ### US-2.2 under Acceptance Criteria
 
 ### US-2.3: View a recipe
 
-**As a** signed-in user
-**I want to** click into a recipe
+**As a** signed-in user  
+**I want to** click into a recipe  
 **So that** I can read its description, ingredients, and cooking steps
 
-**Priority:** P1
-**Independent test:** From the list, open an owned recipe and see description, ingredients, numbered steps, servings, time, category, and photo when present
+**Priority:** P1  
+**Independent test:** From the list, open an owned recipe and see description, ingredients, numbered steps, servings, time, category, and photo when present  
 **Acceptance scenarios:** see ### US-2.3 under Acceptance Criteria
 
 ### US-2.4: Edit a recipe
 
-**As a** signed-in user
-**I want to** edit a recipe I own
+**As a** signed-in user  
+**I want to** edit a recipe I own  
 **So that** I can update its details, ingredients, and cooking steps
 
-**Priority:** P1
-**Independent test:** From the list, edit an owned recipe (name, description, ingredients from my dropdown, numbered steps) and persist the changes
+**Priority:** P1  
+**Independent test:** From the list, edit an owned recipe (name, description, ingredients from my dropdown, numbered steps) and persist the changes  
 **Acceptance scenarios:** see ### US-2.4 under Acceptance Criteria
 
 ### US-2.5: Delete a recipe
 
-**As a** signed-in user
-**I want to** delete a recipe after confirming
+**As a** signed-in user  
+**I want to** delete a recipe after confirming  
 **So that** I can remove recipes I no longer need
 
-**Priority:** P1
-**Independent test:** Confirm delete on an owned recipe; it disappears from the list and the database (including nested steps and recipe ingredients)
+**Priority:** P1  
+**Independent test:** Confirm delete on an owned recipe; it disappears from the list and the database (including nested steps and recipe ingredients)  
 **Acceptance scenarios:** see ### US-2.5 under Acceptance Criteria
 
 ### US-2.6: Keep recipes and ingredients private
 
-**As the** application
-**I want to** scope recipes and ingredients to the signed-in user
+**As the** application  
+**I want to** scope recipes and ingredients to the signed-in user  
 **So that** one user cannot read or change another user's data
 
-**Priority:** P1
-**Independent test:** Authenticated requests for another user's recipe or ingredient return `404`; unauthenticated recipe API calls return `401`
+**Priority:** P1  
+**Independent test:** Authenticated requests for another user's recipe or ingredient return `404`; unauthenticated recipe API calls return `401`  
 **Acceptance scenarios:** see ### US-2.6 under Acceptance Criteria
 
 ---
@@ -82,9 +82,9 @@
 - **FR-002**: `GET` recipe list and recipe detail MUST return only rows where `userId = req.user.id`.
 - **FR-003**: Users MUST be able to create a recipe with a required **name** (trimmed, non-empty).
 - **FR-004**: On create, `userId` MUST be set from `req.user.id` and MUST NOT be taken from the request body.
-- **FR-005**: Create MAY include optional **servings** (integer ≥ 1), **time** in minutes (integer ≥ 1), **category**, and **photo**.
+- **FR-005**: Create MUST accept optional **servings** (integer ≥ 1), **time** in minutes (integer ≥ 1), **category**, and **photo**.
 - **FR-006**: If **category** is set, it MUST be one of: `Breakfast`, `Lunch`, `Dinner`, `Dessert`, `Snack`, `Other`.
-- **FR-007**: Create MAY persist an empty **description**; saving the edit form MUST require a non-empty trimmed description.
+- **FR-007**: Create MUST allow an empty **description**; saving the edit form MUST require a non-empty trimmed description.
 - **FR-008**: Users MUST be able to open a recipe they own from the list into a read-only detail view.
 - **FR-009**: Users MUST be able to edit a recipe they own: name, description, servings, time, category, photo, ingredients, and numbered steps.
 - **FR-010**: Each list row MUST offer **Edit recipe** and **Delete recipe** actions (`aria-label`s) in addition to opening the recipe by clicking its name.
@@ -110,19 +110,16 @@
 - **FR-030**: The system MUST NOT expose unscoped "delete all recipes" or "delete all ingredients" operations.
 - **FR-031**: Ingredient **unit** MUST be one of: `cup`, `gallon`, `gram`, `kilogram`, `liter`, `milliliter`, `ounce`, `pint`, `piece`, `pound`, `quart`, `tablespoon`, `teaspoon`, `unit`. Invalid unit → `400` with **"Unit is not valid."**
 
----
-
 ## Assumptions
 
 - Feature 1 authentication and session handling are already on `dev`.
+- Feature 1's dashboard placeholder and page-level Sign out are replaced by this feature's recipe list and MenuBar.
 - Quantity is required when attaching an ingredient; unit lives on the private ingredient.
 - The ingredient dropdown is empty until the user creates ingredients; Feature 2 therefore includes **Add ingredient** on the recipe form (name + unit). A dedicated Ingredients catalog page is Feature 3.
 - Search filters the already-fetched list in the browser.
 - Category is a single optional dropdown on the recipe, not a tags table.
 - Photos are stored on the local server (no cloud object storage).
 - Starter fields `pricePerUnit`, public/published browsing, PDF export, and linking an ingredient to a specific step are unused in this feature.
-
----
 
 ## Edge Cases
 
@@ -136,8 +133,6 @@
 - Cross-user recipe or ingredient id → `404`.
 - Unauthenticated recipe/ingredient API → `401`.
 - Cancel on the delete dialog → no delete request.
-
----
 
 ## Success Criteria
 
@@ -837,6 +832,8 @@ Do not implement behavior not in this spec.
 - Reordering steps other than display by `stepNumber`
 - Cloud image hosting
 
-## Delivered from Feature 1
+---
 
-- Home is no longer a welcome placeholder. Feature 2 replaces it with the recipe list and introduces MenuBar; Sign out moves off the page into MenuBar.
+## Delivered to Feature 3
+
+- Private ingredients can be created from the recipe edit form so the dropdown is usable; the dedicated Ingredients catalog page (add/edit/delete list) belongs to Feature 3.
