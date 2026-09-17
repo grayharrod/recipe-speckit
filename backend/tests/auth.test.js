@@ -1,6 +1,9 @@
 /**
  * Feature 1 — User Authentication & Session Management
  * Spec: features/feature-1-user-auth.md
+ *
+ * Also Feature 4 — User Profile Management (US-4.3 logout from profile)
+ * Spec: features/feature-4-user-profile-management.md
  */
 
 const request = require("supertest");
@@ -188,6 +191,36 @@ describe("Feature 1 — User Authentication & Session Management", () => {
         .get(`/recipeapi/recipes/user/${created.body.userId}`)
         .set("Authorization", `Bearer ${created.body.token}`);
       expect(denied.status).toBe(401);
+    });
+  });
+});
+
+describe("Feature 4 — User Profile Management", () => {
+  beforeAll(async () => {
+    await db.sequelize.sync({ force: true });
+  });
+
+  beforeEach(async () => {
+    await db.session.destroy({ where: {} });
+    await db.user.destroy({ where: {} });
+  });
+
+  describe("US-4.3 — Log out from profile", () => {
+    it("User logs out from the profile dropdown", async () => {
+      const created = await request(app)
+        .post("/recipeapi/register")
+        .send(registerBody());
+
+      const res = await request(app)
+        .post("/recipeapi/logout")
+        .set("Authorization", `Bearer ${created.body.token}`);
+
+      expect(res.status).toBe(200);
+
+      const sessions = await db.session.findAll({
+        where: { token: created.body.token },
+      });
+      expect(sessions.length).toBe(0);
     });
   });
 });

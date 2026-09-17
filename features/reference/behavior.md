@@ -18,3 +18,9 @@
 | Session key in the browser is `localStorage.user` | `Utils.setStore("user", …)` | Feature 1 |
 | 401 / unauthorized API responses clear `user` and send the user to login | axios `transformResponse` + interceptor | Feature 1 |
 | Feature 1 auth screens (login, register, home) have no MenuBar | `App.vue` | Feature 1 |
+| Profile `GET`/`PUT` `/users/:id` only for `req.user.id`; else `404` | `user.controller` | Feature 4 |
+| Profile update trims fields; username `trim().toLowerCase()`; optional password bcrypt | `user.controller` update | Feature 4 |
+| Edit Profile uses shared `emailRules`; client blocks bad email / short / mismatched password | `MenuBar.vue` | Feature 4 |
+| After profile save, refresh `localStorage.user` and dispatch `user-logged-in` | `MenuBar.vue` | Feature 4 |
+| Profile dropdown shows full name, username, email; actions **Edit Profile** and **Log out** | `MenuBar.vue` | Feature 4 |
+| Logout entry point is the profile dropdown only (no home **Sign out**) | `MenuBar.vue`, `Home.vue` | Feature 4 |
