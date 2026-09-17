@@ -5,6 +5,8 @@ module.exports = (app) => {
 
   router.post("/ingredients/", [authenticateRoute], Ingredient.create);
   router.get("/ingredients/", [authenticateRoute], Ingredient.findAll);
+  router.put("/ingredients/:id", [authenticateRoute], Ingredient.update);
+  router.delete("/ingredients/:id", [authenticateRoute], Ingredient.delete);
 
   app.use("/recipeapi", router);
 };

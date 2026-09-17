@@ -22,6 +22,10 @@ function logout() {
   user.value = null;
   router.push({ name: "login" });
 }
+
+function goIngredients() {
+  router.push({ name: "ingredients" });
+}
 </script>
 
 <template>
@@ -45,6 +49,14 @@ function logout() {
         </router-link>
       </v-toolbar-title>
       <v-spacer></v-spacer>
+      <v-btn
+        v-if="user !== null"
+        class="mx-2 text-white"
+        variant="text"
+        @click="goIngredients"
+      >
+        Ingredients
+      </v-btn>
       <v-menu v-if="user !== null" min-width="200px" rounded>
         <template v-slot:activator="{ props }">
           <v-btn icon v-bind="props">
