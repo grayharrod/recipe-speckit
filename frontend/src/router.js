@@ -35,6 +35,11 @@ const router = createRouter({
       props: true,
       component: () => import("./views/EditRecipe.vue"),
     },
+    {
+      path: "/ingredients",
+      name: "ingredients",
+      component: () => import("./views/IngredientList.vue"),
+    },
   ],
 });
 

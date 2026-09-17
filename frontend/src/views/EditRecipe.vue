@@ -31,6 +31,7 @@ const newIngredientUnit = ref("cup");
 const newStepInstruction = ref("");
 const photo = ref(null);
 const attachError = ref("");
+const savedQuantities = ref({});
 
 const nameRules = [
   (v) => !!String(v ?? "").trim() || "Recipe name is required.",
@@ -71,7 +72,29 @@ function goHome() {
 function ingredientLine(row) {
   const unit = row.ingredient?.unit ?? "";
   const name = row.ingredient?.name ?? "";
-  return `${row.quantity} ${unit} ${name}`.trim();
+  const saved = savedQuantities.value[row.id] ?? row.quantity;
+  return `${saved} ${unit} ${name}`.trim();
+}
+
+function rememberQuantity(row) {
+  if (!row?.id) {
+    return;
+  }
+  savedQuantities.value = {
+    ...savedQuantities.value,
+    [row.id]: Number(row.quantity),
+  };
+}
+
+function quantityDirty(row) {
+  if (row.quantity === "" || row.quantity == null) {
+    return false;
+  }
+  const next = Number(row.quantity);
+  if (!Number.isFinite(next) || next <= 0) {
+    return false;
+  }
+  return next !== Number(savedQuantities.value[row.id]);
 }
 
 async function loadAll() {
@@ -90,6 +113,12 @@ async function loadAll() {
       recipeStep: recipeRes.data.recipeStep ?? [],
       recipeIngredient: recipeRes.data.recipeIngredient ?? [],
     };
+    savedQuantities.value = Object.fromEntries(
+      (recipe.value.recipeIngredient ?? []).map((row) => [
+        row.id,
+        Number(row.quantity),
+      ])
+    );
     ingredients.value = ingredientRes.data;
   } catch {
     error.value = "Unable to load recipe.";
@@ -178,10 +207,33 @@ async function attachIngredient() {
       ...(recipe.value.recipeIngredient ?? []),
       res.data,
     ];
+    rememberQuantity(res.data);
     quantity.value = "";
   } catch (err) {
     error.value =
       err.response?.data?.message || "Unable to add ingredient.";
+  }
+}
+
+async function saveIngredient(row) {
+  attachError.value = "";
+  if (row.quantity === "" || row.quantity == null || Number(row.quantity) <= 0) {
+    attachError.value = "Quantity is required.";
+    return;
+  }
+  try {
+    const res = await RecipeServices.updateRecipeIngredient({
+      recipeId: route.params.id,
+      id: row.id,
+      quantity: Number(row.quantity),
+    });
+    recipe.value.recipeIngredient = recipe.value.recipeIngredient.map((item) =>
+      item.id === row.id ? res.data : item
+    );
+    rememberQuantity(res.data);
+  } catch (err) {
+    error.value =
+      err.response?.data?.message || "Unable to save ingredient.";
   }
 }
 
@@ -318,7 +370,27 @@ async function removeStep(step) {
           :key="row.id"
           class="d-flex align-center mb-2"
         >
-          <span>{{ ingredientLine(row) }}</span>
+          <span class="mr-2">{{ ingredientLine(row) }}</span>
+          <v-text-field
+            v-model="row.quantity"
+            label="Quantity"
+            type="number"
+            density="compact"
+            hide-details
+            class="mr-2"
+            style="max-width: 120px"
+          />
+          <v-btn
+            :color="quantityDirty(row) ? 'primary' : 'secondary'"
+            :variant="quantityDirty(row) ? 'elevated' : 'text'"
+            size="small"
+            class="oc-cta"
+            :disabled="!quantityDirty(row)"
+            aria-label="Save ingredient quantity"
+            @click="saveIngredient(row)"
+          >
+            Save
+          </v-btn>
           <v-btn
             icon="mdi-delete"
             variant="text"

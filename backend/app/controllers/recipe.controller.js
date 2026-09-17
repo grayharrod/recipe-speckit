@@ -62,7 +62,15 @@ const loadRecipeDetail = (id, userId) =>
   Recipe.findOne({
     where: { id, userId },
     include: detailInclude,
-    order: [[{ model: RecipeStep, as: "recipeStep" }, "stepNumber", "ASC"]],
+    order: [
+      [{ model: RecipeStep, as: "recipeStep" }, "stepNumber", "ASC"],
+      [
+        { model: RecipeIngredient, as: "recipeIngredient" },
+        { model: Ingredient, as: "ingredient" },
+        "name",
+        "ASC",
+      ],
+    ],
   });
 
 exports.create = async (req, res) => {

@@ -589,3 +589,130 @@ describe("Feature 2 — Recipe Management", () => {
     });
   });
 });
+
+describe("Feature 3 — Manage Ingredients", () => {
+  beforeAll(async () => {
+    await db.sequelize.sync({ force: true });
+  });
+
+  beforeEach(async () => {
+    await db.recipeIngredient.destroy({ where: {} });
+    await db.recipeStep.destroy({ where: {} });
+    await db.ingredient.destroy({ where: {} });
+    await db.recipe.destroy({ where: {} });
+    await db.session.destroy({ where: {} });
+    await db.user.destroy({ where: {} });
+    clearUploads();
+  });
+
+  describe("US-3.4 — Attach, update, and remove ingredients on a Feature 2 recipe", () => {
+    it("User adds a catalog ingredient to a recipe with a quantity", async () => {
+      const user = await register();
+      const recipe = await request(app)
+        .post("/recipeapi/recipes")
+        .set(authHeader(user.body.token))
+        .send({ name: "Pancakes" });
+      const flour = await request(app)
+        .post("/recipeapi/ingredients")
+        .set(authHeader(user.body.token))
+        .send({ name: "Flour", unit: "cup" });
+
+      const res = await request(app)
+        .post(`/recipeapi/recipes/${recipe.body.id}/recipeIngredients`)
+        .set(authHeader(user.body.token))
+        .send({ ingredientId: flour.body.id, quantity: 2 });
+
+      expect(res.status).toBe(201);
+      expect(res.body.quantity).toBe(2);
+      expect(res.body.ingredient.name).toBe("Flour");
+      expect(res.body.ingredient.unit).toBe("cup");
+    });
+
+    it("User updates a recipe ingredient quantity", async () => {
+      const user = await register();
+      const recipe = await request(app)
+        .post("/recipeapi/recipes")
+        .set(authHeader(user.body.token))
+        .send({ name: "Pancakes" });
+      const flour = await request(app)
+        .post("/recipeapi/ingredients")
+        .set(authHeader(user.body.token))
+        .send({ name: "Flour", unit: "cup" });
+      const line = await request(app)
+        .post(`/recipeapi/recipes/${recipe.body.id}/recipeIngredients`)
+        .set(authHeader(user.body.token))
+        .send({ ingredientId: flour.body.id, quantity: 2 });
+
+      const res = await request(app)
+        .put(
+          `/recipeapi/recipes/${recipe.body.id}/recipeIngredients/${line.body.id}`
+        )
+        .set(authHeader(user.body.token))
+        .send({ quantity: 3 });
+
+      expect(res.status).toBe(200);
+      expect(res.body.quantity).toBe(3);
+    });
+
+    it("User removes an ingredient from a recipe", async () => {
+      const user = await register();
+      const recipe = await request(app)
+        .post("/recipeapi/recipes")
+        .set(authHeader(user.body.token))
+        .send({ name: "Pancakes" });
+      const flour = await request(app)
+        .post("/recipeapi/ingredients")
+        .set(authHeader(user.body.token))
+        .send({ name: "Flour", unit: "cup" });
+      const line = await request(app)
+        .post(`/recipeapi/recipes/${recipe.body.id}/recipeIngredients`)
+        .set(authHeader(user.body.token))
+        .send({ ingredientId: flour.body.id, quantity: 2 });
+
+      const res = await request(app)
+        .delete(
+          `/recipeapi/recipes/${recipe.body.id}/recipeIngredients/${line.body.id}`
+        )
+        .set(authHeader(user.body.token));
+
+      expect(res.status).toBe(200);
+      expect(
+        await db.recipeIngredient.findByPk(line.body.id)
+      ).toBeNull();
+      expect(await db.ingredient.findByPk(flour.body.id)).not.toBeNull();
+    });
+  });
+
+  describe("US-3.5 — Keep the ingredient catalog private", () => {
+    it("User cannot read another user's recipe ingredients", async () => {
+      const userA = await register();
+      const userB = await register({
+        email: "bob@example.com",
+        username: "bsmith",
+        fName: "Bob",
+        lName: "Smith",
+      });
+      const recipe = await request(app)
+        .post("/recipeapi/recipes")
+        .set(authHeader(userB.body.token))
+        .send({ name: "Stew" });
+      const saffron = await request(app)
+        .post("/recipeapi/ingredients")
+        .set(authHeader(userB.body.token))
+        .send({ name: "Saffron", unit: "gram" });
+      await request(app)
+        .post(`/recipeapi/recipes/${recipe.body.id}/recipeIngredients`)
+        .set(authHeader(userB.body.token))
+        .send({ ingredientId: saffron.body.id, quantity: 1 });
+
+      const res = await request(app)
+        .get(`/recipeapi/recipes/${recipe.body.id}/recipeIngredients`)
+        .set(authHeader(userA.body.token));
+
+      expect(res.status).toBe(404);
+      expect(res.body).toEqual({
+        message: `Recipe with id=${recipe.body.id} not found.`,
+      });
+    });
+  });
+});

@@ -94,6 +94,7 @@ exports.findAllForRecipe = async (req, res) => {
     const data = await RecipeIngredient.findAll({
       where: { recipeId: recipe.id },
       include: [{ model: Ingredient, as: "ingredient", required: false }],
+      order: [[{ model: Ingredient, as: "ingredient" }, "name", "ASC"]],
     });
     return res.send(data);
   } catch (err) {
