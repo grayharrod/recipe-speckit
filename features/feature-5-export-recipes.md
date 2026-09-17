@@ -116,16 +116,16 @@
 
 ## Data Ownership & Isolation
 
-Exports inherit Feature 2 recipe ownership. Files are generated in memory (or a temp file deleted after the response); they are not stored as shared objects.
+Exports inherit Feature 2 recipe ownership. Files are generated for the HTTP response only (in memory or a temp file deleted after send); they are not stored as shared objects and are not a new table.
 
 | Rule | Requirement |
 |------|-------------|
-| **Read scope** | Single-recipe export succeeds only when the recipe's `userId = req.user.id` |
-| **Write scope** | This feature does not write recipe rows |
-| **Create scope** | Generated files are not persisted as catalog records |
-| **Cross-user access** | Another user's recipe id → `404` (not `403`); collection Excel includes only `req.user.id` recipes |
-| **UI scope** | Export buttons appear only on screens that already load the signed-in user's data |
-| **Implementation** | Reuse Feature 2 get-accessible-recipe helpers; do not trust a client-supplied `userId` |
+| **Read scope** | Single-recipe export succeeds only when the recipe's `userId = req.user.id`. Collection Excel includes only those rows. Nested `recipeStep` and `recipeIngredient` (with `ingredient`) are included only for those owned recipes. |
+| **Write scope** | This feature does not create, update, or delete recipe, step, or ingredient rows |
+| **Create scope** | Generated PDF/`.xlsx` bytes are not persisted as catalog records |
+| **Cross-user access** | Another user's recipe id → `404` (not `403`) with Feature 2's `"Recipe with id={id} not found."`; collection Excel MUST omit other users' recipes |
+| **UI scope** | SPA export actions live on `home` and `recipe`, which already load only the signed-in user's data. The client MUST NOT pass a `userId` to export URLs. |
+| **Implementation** | Reuse `getAccessibleRecipeOrNull` in `backend/app/authorization/recipeAccess.js` (same helper as Feature 2 recipe controllers). Collection export filters with `userId: req.user.id` like `GET /recipeapi/recipes`. Protect routes with existing `authenticateRoute`. |
 
 ---
 
@@ -141,15 +141,19 @@ Exports inherit Feature 2 recipe ownership. Files are generated in memory (or a 
 
 ## API Requirements
 
-API mount path is `/recipeapi`. Authenticated routes require `Authorization: Bearer <token>`. JSON errors: `{ "message": "Human-readable explanation." }`. Successful exports are **binary**, not JSON.
+Delta on existing Feature 2 recipe routes in `backend/app/routes/recipe.routes.js`. Mount path remains `/recipeapi`. Authenticated routes use `authenticateRoute` and `Authorization: Bearer <token>`. JSON errors stay `{ "message": "Human-readable explanation." }` (no `{ success, data }` envelope). Successful exports are **binary**, not JSON. No request body.
+
+Existing `GET/POST/PUT/DELETE /recipeapi/recipes…` contracts are unchanged (**FR-026**).
+
+Register **`GET /recipes/export` before `GET /recipes/:id` and `GET /recipes/:id/export`** so the literal path `export` is never parsed as a recipe id.
 
 | Method | Endpoint | Auth | Purpose |
 |--------|----------|------|---------|
-| `GET` | `/recipeapi/recipes/:id/export?format=pdf` | Yes | PDF for one owned recipe |
-| `GET` | `/recipeapi/recipes/:id/export?format=xlsx` | Yes | Excel for one owned recipe |
-| `GET` | `/recipeapi/recipes/export?format=xlsx` | Yes | Excel for all recipes owned by the session user |
+| `GET` | `/recipeapi/recipes/:id/export?format=pdf` | Yes (`authenticateRoute`) | PDF for one owned recipe |
+| `GET` | `/recipeapi/recipes/:id/export?format=xlsx` | Yes (`authenticateRoute`) | Excel for one owned recipe |
+| `GET` | `/recipeapi/recipes/export?format=xlsx` | Yes (`authenticateRoute`) | Excel for all recipes owned by the session user |
 
-Route registration MUST distinguish `/recipes/export` from `/recipes/:id/export` so `export` is never treated as a recipe id.
+Load single-recipe export data the same way as `GET /recipeapi/recipes/:id`: associations `recipeStep` and `recipeIngredient` (nested `ingredient`), steps by `stepNumber` ASC, ingredients by ingredient `name` ASC (**FR-005** / **FR-006**). Do not include `imagePath` content in the file (**FR-007**).
 
 ### Single-recipe PDF (`200`)
 
@@ -217,28 +221,33 @@ Ingredient and step rows MUST use the parent recipe's current **name**. Order: r
 
 ## Screen Requirements
 
-Follow [ui-style-system.mdc](../.cursor/rules/ui-style-system.mdc): `oc-cta` on primary labeled CTAs; errors in `<v-alert type="error">`. No new routes.
+Follow [ui-style-system.mdc](../.cursor/rules/ui-style-system.mdc): `oc-cta` on primary labeled CTAs; no labeled buttons inside `v-card-title`; errors in `<v-alert type="error">`. **No new router names or paths** — use existing `home`, `recipe`, and `editRecipe` in `frontend/src/router.js`. HTTP calls go through `frontend/src/services/RecipeServices.js` (not axios in the view). Export GETs MUST use `responseType: "blob"` so the binary body is not parsed as JSON.
 
-### [View: Recipe Detail] — route name `recipe` (path `/recipe/:id`)
+MenuBar, Ingredients nav, Edit Profile, and login/register are unchanged.
 
-- Existing **Edit recipe** remains the primary `oc-cta` in the heading row.
-- Add secondary actions (not inside `v-card-title`): **Export PDF** and **Export Excel**.
-- **Export PDF** calls `GET /recipeapi/recipes/:id/export?format=pdf` and downloads the file.
-- **Export Excel** calls `GET /recipeapi/recipes/:id/export?format=xlsx` and downloads the file.
-- Each button uses `:loading` while its request is in flight (FR-024).
-- Failure: `<v-alert type="error">` with **"Unable to export recipe."** Detail content stays visible.
-- Export buttons are hidden when the recipe failed to load (`error` / no recipe).
+### [View: Recipe Detail] — route name `recipe` (path `/recipe/:id`) — `RecipeDetail.vue`
 
-### [View: My Recipes] — route name `home` (path `/home`)
+- Keep **Back to My Recipes**, heading (`recipe.name`), photo, description / empty copy, servings, time, category, ingredients, steps, and **Edit recipe** as Feature 2.
+- **Edit recipe** remains the primary `oc-cta` in the existing heading row (`d-flex` next to the `h1`, not in `v-card-title`).
+- Add secondary buttons in that same heading row: **Export PDF** and **Export Excel** (`color="secondary"` or outlined; not `oc-cta`).
+- **Export PDF** → `GET /recipeapi/recipes/:id/export?format=pdf` → browser download (**FR-023**).
+- **Export Excel** → `GET /recipeapi/recipes/:id/export?format=xlsx` → browser download.
+- Each export button uses `:loading` while its request is in flight and MUST NOT fire a second request until that call finishes (**FR-024**).
+- Reuse the existing page `<v-alert type="error">`. Export failure copy: **"Unable to export recipe."** Loaded detail stays visible (do not clear `recipe`).
+- Hide export buttons when there is no loaded recipe (load failure / missing id). Load failure copy remains **"Unable to load recipe."**
 
-- Add **Export all as Excel** near **+ Add Recipe**. **+ Add Recipe** remains the primary `oc-cta`. **Export all as Excel** is a secondary elevated/outlined button (not `oc-cta`).
-- The action is available when the list has loaded, including the empty-list state (FR-019).
-- Failure: `<v-alert type="error">` with **"Unable to export recipes."**
-- `:loading` on that button while the collection request is in flight.
+### [View: My Recipes] — route name `home` (path `/home`) — `RecipeList.vue`
 
-### [View: Edit Recipe]
+- Keep heading **My Recipes**, search, list rows, **+ Add Recipe**, add/delete dialogs, empty and search-empty copy from Feature 2.
+- **+ Add Recipe** remains the primary `oc-cta` in the heading row.
+- Add **Export all as Excel** in that same heading row (secondary / outlined; not `oc-cta`), to the left of **+ Add Recipe**.
+- Show **Export all as Excel** after the list request finishes, including when the list is empty (**FR-019**). Hide it while the list `v-progress-linear` is showing (same `loading` as the list fetch).
+- Reuse the existing list `<v-alert type="error">`. Collection export failure copy: **"Unable to export recipes."** Do not replace Feature 2's **"Unable to load recipes."** for list-fetch failures.
+- `:loading` on **Export all as Excel** while that request is in flight (**FR-024**).
 
-- No export controls on the edit form in this feature (detail + list only).
+### [View: Edit Recipe] — route name `editRecipe` (path `/recipe/:id/edit`) — `EditRecipe.vue`
+
+- No export controls on the edit form (detail + list only).
 
 ---
 
@@ -442,30 +451,30 @@ Complete Definition of Done and the merge checklist in @features/framework.md.
 Do not implement behavior not in this spec.
 ```
 
-**Reference updates for this feature:** `features/reference/api.md` (export endpoints), `features/reference/behavior.md` (export privacy, filenames, sheet layout, UI actions). Schema unchanged — do not add tables to `features/reference/data-model.md` unless implementation notes require it.
+**Reference updates for this feature:** `features/reference/api.md` (the three export GETs, binary Content-Type / Content-Disposition, `400` format message), `features/reference/behavior.md` (ownership, filenames, sheet names/columns, detail and list export buttons). Schema unchanged — do not add tables to `features/reference/data-model.md`.
 
 ---
 
 ## Definition of Done
 
-- [ ] Backend and frontend implemented per this spec (**FR-00N** satisfied)
-- [ ] **Success Criteria (SC-00N)** met
-- [ ] All mapped tests pass (`npm test`)
-- [ ] Test Coverage Map complete
-- [ ] `features/reference/data-model.md` updated (if schema changed)
-- [ ] `features/reference/api.md` updated (if API changed)
-- [ ] `features/reference/behavior.md` updated (if product rules changed)
+*   [ ] Backend and frontend implemented per this spec (**FR-00N** satisfied)
+*   [ ] **Success Criteria (SC-00N)** met
+*   [ ] All mapped tests pass (`npm test`)
+*   [ ] Test Coverage Map complete
+*   [ ] `features/reference/data-model.md` updated (if schema changed)
+*   [ ] `features/reference/api.md` updated (if API changed)
+*   [ ] `features/reference/behavior.md` updated (if product rules changed)
 
 ---
 
 ## Out of Scope
 
-- Create / edit / delete recipes (Feature 2)
-- Ingredient catalog CRUD (Feature 3)
-- Profile (Feature 4)
-- Photos inside exported files
-- Exporting all recipes as a single PDF / cookbook
-- CSV, `.xls`, Google Sheets, or email delivery
-- Public / published recipe export (`isPublished`)
-- Storing generated files on disk as a user-visible library
-- Printing via the browser print dialog as the PDF implementation
+*   Recipe create / list / search / detail chrome / steps / photos ([Feature 2](./feature-2-recipe-management.md))
+*   Ingredient catalog CRUD ([Feature 3](./feature-3-manage-ingredients.md))
+*   Profile view/edit and logout placement ([Feature 4](./feature-4-user-profile-management.md))
+*   Photos inside exported files (**FR-007**)
+*   Exporting all recipes as a single PDF / cookbook
+*   CSV, `.xls`, Google Sheets, or email delivery
+*   Public / published recipe export (`isPublished`)
+*   Storing generated files on disk as a user-visible library
+*   Printing via the browser print dialog as the PDF implementation (**FR-008**)
