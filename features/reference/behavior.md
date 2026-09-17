@@ -25,3 +25,9 @@
 | Deleting an ingredient removes its recipe lines, not recipes | Ingredient `delete` | Feature 3 |
 | Deleting a recipe removes recipe-ingredient rows, not catalog ingredients | Recipe `delete` + CASCADE | Feature 2 / 3 |
 | Recipe-ingredient lists ordered by ingredient name | `findAllForRecipe` / recipe detail include | Feature 3 |
+| Profile `GET`/`PUT` `/users/:id` only for `req.user.id`; else `404` | `user.controller` | Feature 4 |
+| Profile update trims fields; username `trim().toLowerCase()`; optional password bcrypt | `user.controller` update | Feature 4 |
+| Edit Profile uses shared `emailRules`; client blocks bad email / short / mismatched password | `MenuBar.vue` | Feature 4 |
+| After profile save, refresh `localStorage.user` and dispatch `user-logged-in` | `MenuBar.vue` | Feature 4 |
+| Profile dropdown shows full name, username, email; actions **Edit Profile** and **Log out** | `MenuBar.vue` | Feature 4 |
+| Logout entry point is the profile dropdown only (no standalone **Sign out**) | `MenuBar.vue` | Feature 4 |

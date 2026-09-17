@@ -1,6 +1,6 @@
 # API Reference
 
-**Status:** Features 1–3 on this branch. Mount path `/recipeapi`. Authenticated routes require `Authorization: Bearer <token>`. Flat JSON (no envelope). Errors `{ "message": "..." }`. Not owned: `404`. Unauthenticated: `401`.
+**Status:** Features 1–4 on this branch. Mount path `/recipeapi`. Authenticated routes require `Authorization: Bearer <token>`. Flat JSON (no envelope). Errors `{ "message": "..." }`. Not owned: `404`. Unauthenticated: `401`.
 
 ## Endpoints
 
@@ -9,6 +9,8 @@
 | `POST` | `/recipeapi/register` | No | Create a user and return a session payload |
 | `POST` | `/recipeapi/login` | No | Authenticate with username + password |
 | `POST` | `/recipeapi/logout` | Yes | Invalidate the current session token |
+| `GET` | `/recipeapi/users/:id` | Yes | Own profile only (`:id` must match `req.user.id`) |
+| `PUT` | `/recipeapi/users/:id` | Yes | Update own profile (`:id` must match `req.user.id`) |
 | `GET` | `/recipeapi/recipes` | Yes | List the signed-in user's recipes |
 | `POST` | `/recipeapi/recipes` | Yes | Create a recipe owned by the session user |
 | `GET` | `/recipeapi/recipes/:id` | Yes | Owned recipe detail (nested steps + ingredients) |
@@ -67,6 +69,23 @@ Login (`200`) and register (`201`) return flat JSON (no envelope):
 
 Password hashes are never returned.
 
+## Profile payload
+
+`GET` / `PUT` `/recipeapi/users/:id` success (`200`):
+
+```json
+{
+  "id": 1,
+  "fName": "Jane",
+  "lName": "Doe",
+  "email": "jdoe@example.com",
+  "username": "jdoe",
+  "role": "worker"
+}
+```
+
+`PUT` body: `fName`, `lName`, `email`, `username` required; `password` optional (min 8 when provided). Cross-user `:id` → `404` `{ "message": "User with id=<id> not found." }`.
+
 ## Provenance
 
 | Area | Introduced |
@@ -74,3 +93,4 @@ Password hashes are never returned.
 | Register / login / logout | Feature 1 |
 | Recipe CRUD, photos, steps, attach ingredient | Feature 2 |
 | Ingredient PUT/DELETE; catalog list order; recipe-ingredient quantity update | Feature 3 |
+| Owned `GET` / `PUT` `/users/:id` | Feature 4 |

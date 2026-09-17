@@ -1,7 +1,26 @@
+const bcrypt = require("bcryptjs");
 const db = require("../models");
 const User = db.user;
 const Op = db.Sequelize.Op;
 const auth = require("./auth.controller.js");
+
+const SALT_ROUNDS = 10;
+
+const isBlank = (value) =>
+  value === undefined || value === null || String(value).trim() === "";
+
+const notFoundMessage = (id) => ({
+  message: `User with id=${id} not found.`,
+});
+
+const toProfile = (user) => ({
+  id: user.id,
+  fName: user.fName,
+  lName: user.lName,
+  email: user.email,
+  username: user.username,
+  role: user.role,
+});
 
 // Create and Save a new User (admin-style create; registration is POST /register)
 exports.create = async (req, res) => {
@@ -26,25 +45,24 @@ exports.findAll = (req, res) => {
     });
 };
 
-// Find a single User with an id
-exports.findOne = (req, res) => {
-  const id = req.params.id;
+// Find a single User with an id (own profile only)
+exports.findOne = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (Number.isNaN(id) || !req.user || id !== req.user.id) {
+      return res.status(404).send(notFoundMessage(req.params.id));
+    }
 
-  User.findByPk(id)
-    .then((data) => {
-      if (data) {
-        res.send(data);
-      } else {
-        res.status(404).send({
-          message: `Cannot find User with id = ${id}.`,
-        });
-      }
-    })
-    .catch((err) => {
-      res.status(500).send({
-        message: err.message || "Error retrieving User with id = " + id,
-      });
+    const user = await User.findByPk(id);
+    if (!user) {
+      return res.status(404).send(notFoundMessage(id));
+    }
+    return res.status(200).send(toProfile(user));
+  } catch (err) {
+    return res.status(500).send({
+      message: err.message || `Error retrieving User with id = ${req.params.id}`,
     });
+  }
 };
 
 // Find a single User with an email
@@ -61,9 +79,6 @@ exports.findByEmail = (req, res) => {
         res.send(data);
       } else {
         res.send({ email: "not found" });
-        /*res.status(404).send({
-          message: `Cannot find User with email=${email}.`
-        });*/
       }
     })
     .catch((err) => {
@@ -73,29 +88,76 @@ exports.findByEmail = (req, res) => {
     });
 };
 
-// Update a User by the id in the request
-exports.update = (req, res) => {
-  const id = req.params.id;
+// Update own profile only
+exports.update = async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (Number.isNaN(id) || !req.user || id !== req.user.id) {
+      return res.status(404).send(notFoundMessage(req.params.id));
+    }
 
-  User.update(req.body, {
-    where: { id: id },
-  })
-    .then((number) => {
-      if (number == 1) {
-        res.send({
-          message: "User was updated successfully.",
-        });
-      } else {
-        res.send({
-          message: `Cannot update User with id = ${id}. Maybe User was not found or req.body is empty!`,
-        });
-      }
-    })
-    .catch((err) => {
-      res.status(500).send({
-        message: err.message || "Error updating User with id =" + id,
-      });
+    const user = await User.findByPk(id);
+    if (!user) {
+      return res.status(404).send(notFoundMessage(id));
+    }
+
+    const passwordRaw = req.body.password;
+    const passwordProvided =
+      passwordRaw !== undefined &&
+      passwordRaw !== null &&
+      String(passwordRaw) !== "";
+
+    if (passwordProvided && String(passwordRaw).length < 8) {
+      return res
+        .status(400)
+        .send({ message: "Password must be at least 8 characters." });
+    }
+
+    if (isBlank(req.body.fName)) {
+      return res.status(400).send({ message: "First name is required." });
+    }
+    if (isBlank(req.body.lName)) {
+      return res.status(400).send({ message: "Last name is required." });
+    }
+    if (isBlank(req.body.email)) {
+      return res.status(400).send({ message: "Email is required." });
+    }
+    if (isBlank(req.body.username)) {
+      return res.status(400).send({ message: "Username is required." });
+    }
+
+    const fName = String(req.body.fName).trim();
+    const lName = String(req.body.lName).trim();
+    const email = String(req.body.email).trim();
+    const username = String(req.body.username).trim().toLowerCase();
+
+    const takenUsername = await User.findOne({
+      where: { username, id: { [Op.ne]: id } },
     });
+    if (takenUsername) {
+      return res.status(400).send({ message: "Username is already taken." });
+    }
+
+    const takenEmail = await User.findOne({
+      where: { email, id: { [Op.ne]: id } },
+    });
+    if (takenEmail) {
+      return res.status(400).send({ message: "Email is already registered." });
+    }
+
+    const updates = { fName, lName, email, username };
+    if (passwordProvided) {
+      updates.password = await bcrypt.hash(String(passwordRaw), SALT_ROUNDS);
+    }
+
+    await User.unscoped().update(updates, { where: { id } });
+    const refreshed = await User.findByPk(id);
+    return res.status(200).send(toProfile(refreshed));
+  } catch (err) {
+    return res.status(500).send({
+      message: err.message || `Error updating User with id = ${req.params.id}`,
+    });
+  }
 };
 
 // Delete a User with the specified id in the request
