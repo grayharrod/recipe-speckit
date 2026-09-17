@@ -2,6 +2,7 @@
 import { computed } from "vue";
 import { useRoute } from "vue-router";
 import MenuBar from "./components/MenuBar.vue";
+import ThemeToggle from "./components/ThemeToggle.vue";
 
 const route = useRoute();
 const hideMenu = computed(() =>
@@ -12,6 +13,7 @@ const hideMenu = computed(() =>
 <template>
   <v-app>
     <MenuBar v-if="!hideMenu" :key="route.fullPath" />
+    <ThemeToggle />
     <v-main>
       <router-view />
     </v-main>

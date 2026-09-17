@@ -61,6 +61,16 @@
 **Independent test:** Navigate to protected route without session → redirect to login; API without token → `401`  
 **Acceptance scenarios:** see ### US-1.5 under Acceptance Criteria
 
+### US-1.6: Selection between Dark and Light mode
+
+**As a** Registered user 
+**I want to** Switch between dark and bright mode whenever I want
+**So that** I can have the style that I want in my recipe app.
+
+**Priority:** P1  
+**Independent test:** Sign in with known credentials and receive session token + redirect to home  
+**Acceptance scenarios:** see ### US-1.6 under Acceptance Criteria
+
 ---
 
 
@@ -185,6 +195,7 @@ Feature 1 establishes identity; Features 2–3 enforce per-user data boundaries.
 - Displays a welcome message using the user's first name.
 - **No** `MenuBar` in Feature 1 — auth pages and this placeholder use a full-screen layout only.
 - **Sign out** button on this page (standalone `v-btn`; removed from page content when `MenuBar` is added in Feature 2).
+- Signed-in users see a theme toggle button in the **top right corner** (bright mode default; click switches bright ↔ dark).
 
 ---
 
@@ -450,7 +461,17 @@ Feature 1 establishes identity; Features 2–3 enforce per-user data boundaries.
 - **Then** I am redirected to the login page
 
 ---
+### US-1.6 — Switch between dark and bright mode
 
+
+
+#### Scenario: Button was clicked
+
+- **Given** A button on the top right corner
+- **When** I click on the button to switch to either Dark or Bright mode, always having bright mode as default
+- **Then** I have the style switch from Bright to dark mode or from dark to bright mode
+
+---
 
 
 ## Test Coverage Map
@@ -478,6 +499,7 @@ Each scenario above must map to at least one automated test.
 | US-1.3 | Expired or invalid session token                    | `backend/tests/authenticate.test.js`                                  | `Expired or invalid session token`                    |
 | US-1.4 | User signs out                                      | `backend/tests/auth.test.js`                                          | `User signs out`                                      |
 | US-1.5 | Unauthenticated user accesses a protected route     | `backend/tests/authenticate.test.js`, `frontend/tests/router.test.js` | `Unauthenticated user accesses a protected route`     |
+| US-1.6 | Button was clicked                                  | `frontend/tests/ThemeToggle.test.js`                                  | `Button was clicked`                                  |
 
 
 ---
